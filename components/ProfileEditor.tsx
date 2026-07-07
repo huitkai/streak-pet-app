@@ -4,8 +4,7 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile } from "@/lib/actions";
 import Avatar from "@/components/Avatar";
-import SettingsSheet from "@/components/SettingsSheet";
-import { CameraIcon, SettingsIcon } from "@/components/icons";
+import { CameraIcon } from "@/components/icons";
 import type { ProfileRow } from "@/lib/types";
 
 export default function ProfileEditor({
@@ -23,7 +22,6 @@ export default function ProfileEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -79,26 +77,16 @@ export default function ProfileEditor({
 
   return (
     <div className="flex flex-col">
-      {/* Nút Cài đặt — nơi chứa Đăng xuất, thay vì để nút đăng xuất trôi nổi ở màn hình chính */}
-      <div className="flex justify-end px-4 pt-3">
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Cài đặt"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
-        >
-          <SettingsIcon className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="flex flex-col items-center px-4 pb-2 pt-1">
+      <div className="-mt-12 flex flex-col items-center px-4 pb-2">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           className="relative active:scale-95"
           aria-label="Đổi ảnh đại diện"
         >
-          <Avatar url={avatarUrl} name={name || "?"} size={104} />
+          <div className="rounded-full ring-4 ring-[var(--background)]">
+            <Avatar url={avatarUrl} name={name || "?"} size={96} />
+          </div>
           <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)] text-white ring-2 ring-[var(--background)]">
             <CameraIcon className="h-4 w-4" />
           </span>
@@ -161,8 +149,6 @@ export default function ProfileEditor({
           </div>
         )}
       </div>
-
-      {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

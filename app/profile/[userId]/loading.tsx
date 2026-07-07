@@ -11,8 +11,9 @@ export default function ProfileLoading() {
         <div className="h-3.5 w-24 animate-pulse rounded-full bg-black/10" />
       </header>
 
-      <div className="flex flex-col items-center px-4 py-8">
-        <div className="h-24 w-24 animate-pulse rounded-full bg-black/10" />
+      <div className="h-24 w-full animate-pulse bg-black/5" />
+      <div className="-mt-12 flex flex-col items-center px-4 pb-6">
+        <div className="h-24 w-24 animate-pulse rounded-full bg-black/10 ring-4 ring-[var(--background)]" />
         <div className="mt-3 h-4 w-32 animate-pulse rounded-full bg-black/10" />
       </div>
 

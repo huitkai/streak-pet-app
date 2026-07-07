@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import ProfileEditor from "@/components/ProfileEditor";
+import ProfileHeaderActions from "@/components/ProfileHeaderActions";
 import Avatar from "@/components/Avatar";
 import PetAvatar from "@/components/PetAvatar";
 import FlameBadge from "@/components/FlameBadge";
@@ -66,21 +67,30 @@ export default async function ProfilePage({
 
   return (
     <div className="safe-top safe-bottom flex flex-1 flex-col bg-[var(--background)]">
-      <header className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2 py-2.5">
-        <Link href="/" className="flex h-8 w-8 items-center justify-center rounded-full transition-transform active:scale-90 active:bg-black/5">
-          <ArrowLeftIcon className="h-5 w-5" />
-        </Link>
-        <h1 className="text-[15px] font-semibold text-[var(--foreground)]">
-          {isSelf ? "Hồ sơ của bạn" : targetProfile.display_name || "Hồ sơ"}
-        </h1>
+      <header className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link href="/" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90 active:bg-black/5">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Link>
+          <h1 className="truncate text-[15px] font-semibold text-[var(--foreground)]">
+            {isSelf ? "Hồ sơ của bạn" : targetProfile.display_name || "Hồ sơ"}
+          </h1>
+        </div>
+        {isSelf && <ProfileHeaderActions />}
       </header>
 
       <div className="flex-1 overflow-y-auto">
+        {/* Banner mềm phía sau avatar để trang hồ sơ có chiều sâu, thay vì
+            avatar trôi nổi trên nền trắng trơn như trước. */}
+        <div className="h-24 w-full bg-gradient-to-br from-[var(--brand-light)] via-[#ffd3e3] to-[var(--brand)]" />
+
         {isSelf ? (
           <ProfileEditor userId={user.id} profile={targetProfile} />
         ) : (
-          <div className="flex flex-col items-center px-4 py-8">
-            <Avatar url={targetProfile.avatar_url} name={targetProfile.display_name} size={104} />
+          <div className="-mt-12 flex flex-col items-center px-4 pb-6">
+            <div className="rounded-full ring-4 ring-[var(--background)]">
+              <Avatar url={targetProfile.avatar_url} name={targetProfile.display_name} size={96} />
+            </div>
             <p className="mt-3 text-lg font-bold text-[var(--foreground)]">
               {targetProfile.display_name || "Người ấy"}
             </p>

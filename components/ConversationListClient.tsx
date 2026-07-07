@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import Avatar from "@/components/Avatar";
 import ConversationRow from "@/components/ConversationRow";
 import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
 import type { ConversationSummary, ProfileRow } from "@/lib/types";
@@ -10,12 +8,11 @@ import type { ConversationSummary, ProfileRow } from "@/lib/types";
 export default function ConversationListClient({
   conversations,
   myUserId,
-  myProfile,
   waitingInviteCode,
 }: {
   conversations: ConversationSummary[];
   myUserId: string;
-  myProfile: ProfileRow | null;
+  myProfile?: ProfileRow | null;
   /** Nếu couple của mình chưa có đủ 2 người, truyền mã mời để hiện banner chờ. */
   waitingInviteCode: string | null;
 }) {
@@ -86,9 +83,6 @@ export default function ConversationListClient({
               >
                 <PlusIcon className="h-[18px] w-[18px]" />
               </button>
-              <Link href={`/profile/${myUserId}`} aria-label="Hồ sơ của bạn" className="active:scale-95 md:hidden">
-                <Avatar url={myProfile?.avatar_url} name={myProfile?.display_name} size={34} ring />
-              </Link>
             </div>
           </>
         )}
