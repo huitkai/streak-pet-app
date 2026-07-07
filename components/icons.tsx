@@ -476,6 +476,32 @@ export function ReelIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps
 /** Kính lúp tìm kiếm cho danh sách hội thoại (kích thước nhỏ hơn SearchIcon 1 chút
  * về mặt dùng, nhưng hiện tại tái sử dụng cùng path cho nhất quán — giữ tên riêng
  * để chỗ gọi rõ ngữ nghĩa). */
+export function SettingsIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.92 2.92l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56v.17a2.06 2.06 0 1 1-4.12 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.92-2.92l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03h-.17a2.06 2.06 0 1 1 0-4.12h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.92-2.92l.06.06a1.7 1.7 0 0 0 1.87.34h.08a1.7 1.7 0 0 0 1.03-1.56v-.17a2.06 2.06 0 1 1 4.12 0v.09c0 .68.4 1.29 1.03 1.56h.08a1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.92 2.92l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08c.27.63.88 1.04 1.56 1.04h.17a2.06 2.06 0 1 1 0 4.12h-.09a1.7 1.7 0 0 0-1.56 1.03Z" />
+    </svg>
+  );
+}
+
+export function BellIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M6 9a6 6 0 1 1 12 0c0 4.2 1.3 5.7 2 6.5H4c.7-.8 2-2.3 2-6.5Z" />
+      <path d="M10 19.5a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M9 5.5 15.5 12 9 18.5" />
+    </svg>
+  );
+}
+
 export function ChatBubbleIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>

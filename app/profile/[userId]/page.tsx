@@ -5,7 +5,6 @@ import ProfileEditor from "@/components/ProfileEditor";
 import Avatar from "@/components/Avatar";
 import PetAvatar from "@/components/PetAvatar";
 import FlameBadge from "@/components/FlameBadge";
-import SignOutButton from "@/components/SignOutButton";
 import { ArrowLeftIcon, TrophyIcon } from "@/components/icons";
 import { STAGE_LABEL, SPECIES_LABEL, variantForCouple, type PetSpecies } from "@/lib/pets";
 import type { PetAccessoryValue } from "@/lib/types";
@@ -115,12 +114,6 @@ export default async function ProfilePage({
                 <TrophyIcon className="h-3.5 w-3.5" /> Kỷ lục {streakLongest} ngày
               </span>
             </div>
-          </div>
-        )}
-
-        {isSelf && (
-          <div className="border-t border-[var(--border)] px-4 py-4 text-center">
-            <SignOutButton />
           </div>
         )}
       </div>

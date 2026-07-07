@@ -3,7 +3,6 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { previewLabel } from "@/lib/message-format";
 import { nicknameForPartner } from "@/lib/nickname";
 import { DEFAULT_THEME_COLOR } from "@/lib/theme";
-import SignOutButton from "@/components/SignOutButton";
 import ConversationListClient from "@/components/ConversationListClient";
 import AppShell from "@/components/AppShell";
 import { CheckIcon } from "@/components/icons";
@@ -103,10 +102,6 @@ export default async function Home({
           myProfile={myProfile}
           waitingInviteCode={couple.user2_id ? null : couple.invite_code}
         />
-
-        <div className="border-t border-[var(--border)] px-4 py-2 text-center">
-          <SignOutButton />
-        </div>
       </div>
     </AppShell>
   );
