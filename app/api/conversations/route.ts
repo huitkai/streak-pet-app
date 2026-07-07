@@ -1,23 +1,25 @@
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { previewLabel } from "@/lib/message-format";
 import { nicknameForPartner } from "@/lib/nickname";
 import { DEFAULT_THEME_COLOR } from "@/lib/theme";
-import SignOutButton from "@/components/SignOutButton";
-import ConversationListClient from "@/components/ConversationListClient";
-import AppShell from "@/components/AppShell";
-import { CheckIcon } from "@/components/icons";
 import type { ConversationSummary } from "@/lib/types";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ confirmed?: string }>;
-}) {
-  const { confirmed } = await searchParams;
+/**
+ * GET /api/conversations
+ *
+ * Trả về đúng dữ liệu mà `app/page.tsx` tính toán để render
+ * `ConversationListClient`, nhưng ở dạng JSON. Lý do cần route này: layout
+ * 2 cột trên desktop (`AppShell`) cần hiển thị sidebar danh sách hội thoại
+ * NGAY CẢ khi người dùng đang ở trang `/chat` (route riêng, không có sẵn dữ
+ * liệu này). Thay vì lồng ghép lại logic fetch vào `chat/page.tsx` (server
+ * component, sẽ làm tăng round-trip DB cho mọi lần mở chat kể cả mobile),
+ * ta để `AppShell` (client, chỉ chạy trên desktop) tự gọi route này.
+ */
+export async function GET() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) redirect("/login");
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { data: couple } = await supabase
     .from("couples")
@@ -25,7 +27,7 @@ export default async function Home({
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .maybeSingle();
 
-  if (!couple) redirect("/couple");
+  if (!couple) return NextResponse.json({ conversations: [], myProfile: null, waitingInviteCode: null });
 
   const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
 
@@ -51,10 +53,6 @@ export default async function Home({
         .maybeSingle(),
     ]);
 
-  // Cấu trúc dữ liệu tổng quát hoá sẵn (xem ConversationSummary trong
-  // lib/types.ts) — hiện chỉ có đúng 1 phần tử vì mỗi user mới thuộc 1
-  // couple, nhưng UI (ConversationListClient/ConversationRow) đã sẵn sàng
-  // nhận nhiều phần tử khi mở rộng bạn bè/người thân.
   let conversations: ConversationSummary[] = [];
   if (couple.user2_id) {
     const preview = lastMsg
@@ -87,27 +85,10 @@ export default async function Home({
     ];
   }
 
-  return (
-    <AppShell mode="list">
-      <div className="safe-top safe-bottom flex flex-1 flex-col bg-[var(--background)]">
-        {confirmed === "1" && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            <CheckIcon className="h-4 w-4 shrink-0" />
-            <span>Xác nhận email thành công! Chào mừng bạn đến với Streak & Pet.</span>
-          </div>
-        )}
-
-        <ConversationListClient
-          conversations={conversations}
-          myUserId={user.id}
-          myProfile={myProfile}
-          waitingInviteCode={couple.user2_id ? null : couple.invite_code}
-        />
-
-        <div className="border-t border-[var(--border)] px-4 py-2 text-center">
-          <SignOutButton />
-        </div>
-      </div>
-    </AppShell>
-  );
+  return NextResponse.json({
+    conversations,
+    myProfile: myProfile ?? null,
+    myUserId: user.id,
+    waitingInviteCode: couple.user2_id ? null : couple.invite_code,
+  });
 }

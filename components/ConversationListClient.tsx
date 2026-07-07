@@ -70,7 +70,7 @@ export default function ConversationListClient({
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Tìm hội thoại"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5 md:hidden"
                 >
                   <SearchIcon className="h-[18px] w-[18px]" />
                 </button>
@@ -90,6 +90,20 @@ export default function ConversationListClient({
           </>
         )}
       </header>
+
+      {conversations.length > 0 && (
+        <div className="hidden border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2 md:block">
+          <div className="flex items-center gap-2 rounded-full bg-[var(--background)] px-3 py-2">
+            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tìm hội thoại..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {waitingInviteCode ? (

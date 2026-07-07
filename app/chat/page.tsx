@@ -3,6 +3,7 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { checkStreakBreak } from "@/lib/actions";
 import ChatHeader from "@/components/ChatHeader";
 import ChatBox from "@/components/ChatBox";
+import AppShell from "@/components/AppShell";
 import { ChatThemeProvider } from "@/lib/chat-theme-context";
 import { DEFAULT_THEME_COLOR } from "@/lib/theme";
 import { nicknameForPartner, myNicknameForPartner } from "@/lib/nickname";
@@ -70,41 +71,43 @@ export default async function ChatPage() {
   const myNicknameRaw = myNicknameForPartner(couple, user.id);
 
   return (
-    <ChatThemeProvider
-      coupleId={couple.id}
-      initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}
-      initialAccessory={accessory}
-      className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]"
-    >
-      <ChatHeader
+    <AppShell mode="chat">
+      <ChatThemeProvider
         coupleId={couple.id}
-        userId={user.id}
-        partnerId={partnerId}
-        petName={couple.pet_name}
-        species={species}
-        initialPet={pet}
-        initialStreak={streak}
-        initialNickname={nickname}
-        initialNicknameRaw={myNicknameRaw}
-        myProfile={myProfile}
-        partnerProfile={partnerProfile}
-      />
-      <ChatBox
-        coupleId={couple.id}
-        userId={user.id}
-        partnerId={partnerId}
-        initialMessages={messages}
-        species={species}
-        accessory={accessory}
-        initialPet={pet}
-        myProfile={myProfile}
-        partnerProfile={partnerProfile}
-        initialReads={reads ?? []}
-        initialDeliveries={deliveries ?? []}
-        initialReactions={reactions ?? []}
-        initialPins={pins ?? []}
-        initialHiddenIds={(hidden ?? []).map((h) => h.message_id)}
-      />
-    </ChatThemeProvider>
+        initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}
+        initialAccessory={accessory}
+        className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]"
+      >
+        <ChatHeader
+          coupleId={couple.id}
+          userId={user.id}
+          partnerId={partnerId}
+          petName={couple.pet_name}
+          species={species}
+          initialPet={pet}
+          initialStreak={streak}
+          initialNickname={nickname}
+          initialNicknameRaw={myNicknameRaw}
+          myProfile={myProfile}
+          partnerProfile={partnerProfile}
+        />
+        <ChatBox
+          coupleId={couple.id}
+          userId={user.id}
+          partnerId={partnerId}
+          initialMessages={messages}
+          species={species}
+          accessory={accessory}
+          initialPet={pet}
+          myProfile={myProfile}
+          partnerProfile={partnerProfile}
+          initialReads={reads ?? []}
+          initialDeliveries={deliveries ?? []}
+          initialReactions={reactions ?? []}
+          initialPins={pins ?? []}
+          initialHiddenIds={(hidden ?? []).map((h) => h.message_id)}
+        />
+      </ChatThemeProvider>
+    </AppShell>
   );
 }
