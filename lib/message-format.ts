@@ -4,7 +4,7 @@ const STICKER_PREFIX = "::sticker::";
 const IMAGE_PREFIX = "::image::";
 const VOICE_PREFIX = "::voice::";
 const GIF_PREFIX = "::gif::";
-const INSTANT_PREFIX = "::instant::";
+const STAMP_PHOTO_PREFIX = "::stampphoto::";
 
 /** Mã hoá 1 sticker thành nội dung lưu trong cột `content` có sẵn — không cần migrate DB. */
 export function encodeSticker(id: StickerId): string {
@@ -20,6 +20,19 @@ export function encodeSticker(id: StickerId): string {
 export function encodeImage(url: string, width?: number, height?: number): string {
   const dims = width && height ? `::${width}x${height}` : "";
   return `${IMAGE_PREFIX}${url}${dims}`;
+}
+
+/**
+ * Mã hoá 1 ảnh "Chụp nhanh" kiểu Locket — ảnh PNG đã được đục lỗ răng cưa
+ * THẬT vào file (xem lib/stamp-frame.ts), khác encodeImage() ở chỗ: ảnh này
+ * có nền trong suốt ở phần răng cưa nên khi hiển thị KHÔNG được bọc thêm nền
+ * trắng/bo góc như ảnh thường, phải giữ nguyên hình dạng vốn có trong file.
+ * Dùng chung bucket Storage "chat-images" với ảnh thường — không cần bucket
+ * riêng vì bản chất vẫn là 1 file ảnh, chỉ khác định dạng nội dung tin nhắn.
+ */
+export function encodeStampPhoto(url: string, width?: number, height?: number): string {
+  const dims = width && height ? `::${width}x${height}` : "";
+  return `${STAMP_PHOTO_PREFIX}${url}${dims}`;
 }
 
 /** Mã hoá 1 tin nhắn thoại: ::voice::<url>::<durationSeconds> */
@@ -38,24 +51,12 @@ export function encodeGif(url: string, width?: number, height?: number): string 
   return `${GIF_PREFIX}${url}${dims}`;
 }
 
-/**
- * Mã hoá 1 ảnh chụp tức thì (kiểu Locket) — khung tem răng cưa đã được bake
- * sẵn vào file PNG (xem lib/stamp-frame.ts) trước khi upload lên bucket
- * "instant-photos", nên khi render KHÔNG cần bọc thêm CSS giả hình dạng nào
- * nữa — chỉ hiện đúng file PNG có alpha đó.
- * Format: ::instant::<url>::<width>x<height>
- */
-export function encodeInstant(url: string, width?: number, height?: number): string {
-  const dims = width && height ? `::${width}x${height}` : "";
-  return `${INSTANT_PREFIX}${url}${dims}`;
-}
-
 export type DecodedMessage =
   | { type: "text"; text: string }
   | { type: "sticker"; id: StickerId }
   | { type: "image"; url: string; width?: number; height?: number }
+  | { type: "stamp_photo"; url: string; width?: number; height?: number }
   | { type: "gif"; url: string; width?: number; height?: number }
-  | { type: "instant"; url: string; width?: number; height?: number }
   | { type: "voice"; url: string; duration: number };
 
 /** Khoảng cách tối thiểu (ms) giữa 2 tin để tự chèn 1 dòng mốc thời gian ở
@@ -100,6 +101,14 @@ export function decodeMessage(content: string): DecodedMessage {
     if (match) return { type: "voice", url: match[1], duration: Number(match[2]) };
     return { type: "voice", url: rest, duration: 0 };
   }
+  if (content.startsWith(STAMP_PHOTO_PREFIX)) {
+    const rest = content.slice(STAMP_PHOTO_PREFIX.length);
+    const match = rest.match(/^(.*)::(\d+)x(\d+)$/);
+    if (match) {
+      return { type: "stamp_photo", url: match[1], width: Number(match[2]), height: Number(match[3]) };
+    }
+    return { type: "stamp_photo", url: rest };
+  }
   if (content.startsWith(IMAGE_PREFIX)) {
     const rest = content.slice(IMAGE_PREFIX.length);
     const match = rest.match(/^(.*)::(\d+)x(\d+)$/);
@@ -116,14 +125,6 @@ export function decodeMessage(content: string): DecodedMessage {
     }
     return { type: "gif", url: rest };
   }
-  if (content.startsWith(INSTANT_PREFIX)) {
-    const rest = content.slice(INSTANT_PREFIX.length);
-    const match = rest.match(/^(.*)::(\d+)x(\d+)$/);
-    if (match) {
-      return { type: "instant", url: match[1], width: Number(match[2]), height: Number(match[3]) };
-    }
-    return { type: "instant", url: rest };
-  }
   return { type: "text", text: content };
 }
 
@@ -133,7 +134,7 @@ export function previewLabel(content: string): string {
   const d = decodeMessage(content);
   if (d.type === "sticker") return "Nhãn dán";
   if (d.type === "image") return "📷 Hình ảnh";
-  if (d.type === "instant") return "📸 Ảnh tức thì";
+  if (d.type === "stamp_photo") return "📸 Chụp nhanh";
   if (d.type === "gif") return "GIF";
   if (d.type === "voice") return "🎙️ Tin nhắn thoại";
   return d.text.length > 80 ? d.text.slice(0, 80) + "…" : d.text;

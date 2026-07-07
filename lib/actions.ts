@@ -5,7 +5,7 @@ import { stageForStreak } from "@/lib/pet-logic";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { StickerId } from "@/components/Stickers";
-import { encodeSticker, encodeImage, encodeVoice, encodeGif, encodeInstant } from "@/lib/message-format";
+import { encodeSticker, encodeImage, encodeStampPhoto, encodeVoice, encodeGif } from "@/lib/message-format";
 import type { PetSpeciesValue, PetAccessoryValue } from "@/lib/types";
 import { isAccessoryUnlocked } from "@/lib/pets";
 import { isValidHex } from "@/lib/theme";
@@ -569,7 +569,6 @@ export async function searchMessages(coupleId: string, query: string) {
     .not("content", "like", "::image::%")
     .not("content", "like", "::gif::%")
     .not("content", "like", "::voice::%")
-    .not("content", "like", "::instant::%")
     .order("created_at", { ascending: false })
     .limit(50);
   if (error) return [];
@@ -715,12 +714,18 @@ export async function sendImage(
 }
 
 /**
- * Gửi 1 ảnh chụp tức thì (kiểu Locket) đã được client upload thẳng lên
- * bucket "instant-photos" — khung tem răng cưa đã bake sẵn vào file PNG
- * (xem lib/stamp-frame.ts), hàm này chỉ ghi đường dẫn vào bảng messages.
- * Không nhận replyToId vì chụp = gửi luôn, không có bước reply/xác nhận.
+ * Gửi 1 ảnh "Chụp nhanh" kiểu Locket — PNG đã đục sẵn răng cưa thật (xem
+ * lib/stamp-frame.ts và components/InstantCapture.tsx). Dùng chung bucket
+ * Storage "chat-images" như sendImage(), chỉ khác cách encode nội dung để
+ * client biết hiển thị không viền/không bo góc (giữ nguyên hình dạng PNG).
  */
-export async function sendInstantPhoto(coupleId: string, url: string, width?: number, height?: number) {
+export async function sendStampPhoto(
+  coupleId: string,
+  url: string,
+  width?: number,
+  height?: number,
+  replyToId?: string | null
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -732,7 +737,8 @@ export async function sendInstantPhoto(coupleId: string, url: string, width?: nu
     .insert({
       couple_id: coupleId,
       sender_id: user!.id,
-      content: encodeInstant(url, width, height),
+      content: encodeStampPhoto(url, width, height),
+      reply_to_id: replyToId ?? null,
     })
     .select()
     .single();

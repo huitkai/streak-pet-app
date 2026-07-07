@@ -1,36 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { applyStampMask } from "@/lib/stamp-frame";
-import { XIcon, CameraIcon } from "@/components/icons";
-
-/** Kích thước khung tem xuất ra (vuông) — khớp với canvas dùng để bake mask. */
-const OUTPUT_SIZE = 720;
-
-interface InstantCaptureProps {
-  /** Gọi khi đã có PNG (đã bake răng cưa) sẵn sàng để upload + gửi. */
-  onCapture: (file: Blob) => void;
-  onClose: () => void;
-}
-
 /**
- * Camera live full-screen kiểu Locket. Khung tem (viền lỗ tròn khoét đều)
- * được overlay lên viewfinder bằng CSS mask-image để người dùng thấy trước
- * hình dạng — NHƯNG hình dạng thật sự nằm trong file ảnh chỉ được bake ở
- * bước chụp (xem lib/stamp-frame.ts), không phải CSS này.
+ * "Chụp nhanh" kiểu Locket: mở camera trước full-screen, khung tem răng cưa
+ * hiện ngay trên viewfinder, bấm chụp là gửi luôn (không có bước xem trước
+ * ảnh rồi mới xác nhận gửi). Hình dạng răng cưa được BAKE THẬT vào file PNG
+ * xuất ra (xem lib/stamp-frame.ts) — không phải chỉ là CSS đè lên ảnh vuông.
  */
-export default function InstantCapture({ onCapture, onClose }: InstantCaptureProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+
+import { useEffect, useRef, useState } from "react";
+import { XIcon, CameraFlipIcon } from "@/components/icons";
+import { applyStampMask, defaultHoleRadius, drawStampOverlay } from "@/lib/stamp-frame";
+
+/** Tỉ lệ khung ảnh xuất ra — dọc 4:5 giống khung ảnh Locket/Instagram, không
+ * lấy nguyên khung video (thường 16:9) để tránh ảnh quá dẹt. */
+const OUTPUT_ASPECT = 4 / 5;
+const OUTPUT_WIDTH = 640;
+const OUTPUT_HEIGHT = Math.round(OUTPUT_WIDTH / OUTPUT_ASPECT);
+
+export default function InstantCapture({
+  onCapture,
+  onClose,
+}: {
+  onCapture: (blob: Blob, width: number, height: number) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [ready, setReady] = useState(false);
+  const [facing, setFacing] = useState<"user" | "environment">("user");
   const [error, setError] = useState<string | null>(null);
-  const [capturing, setCapturing] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [flashing, setFlashing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user" }, audio: false })
-      .then((stream) => {
+
+    async function start() {
+      setReady(false);
+      setError(null);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing },
+          audio: false,
+        });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -38,132 +51,138 @@ export default function InstantCapture({ onCapture, onClose }: InstantCapturePro
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
         setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Không mở được camera. Hãy kiểm tra quyền truy cập.");
-      });
+      } catch {
+        setError("Không thể mở camera. Vui lòng cấp quyền camera cho trình duyệt.");
+      }
+    }
+    start();
 
     return () => {
       cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [facing]);
 
-  async function handleShutter() {
-    const video = videoRef.current;
-    if (!video || capturing) return;
-    setCapturing(true);
+  // Vẽ lại overlay khung tem mỗi khi kích thước khung xem đổi (chỉ để xem
+  // trước — hình dạng thật được bake lúc chụp bằng applyStampMask).
+  useEffect(() => {
+    const canvas = overlayRef.current;
+    if (!canvas || !ready) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
 
-    try {
-      // 1. Vẽ frame hiện tại của video vào canvas vuông (crop giữa khung hình).
-      const canvas = document.createElement("canvas");
-      canvas.width = OUTPUT_SIZE;
-      canvas.height = OUTPUT_SIZE;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Không tạo được canvas.");
-
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      const side = Math.min(vw, vh);
-      const sx = (vw - side) / 2;
-      const sy = (vh - side) / 2;
-
-      // Lật ngang vì camera trước (facingMode: user) nên hiện như gương.
-      ctx.translate(OUTPUT_SIZE, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, sx, sy, side, side, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-      // 2. Bake khung tem (lỗ tròn) trực tiếp vào pixel của canvas.
-      applyStampMask(canvas, { holeRadius: 8, holeSpacing: 16 });
-
-      // 3. Xuất PNG (giữ alpha ở phần lỗ khoét).
-      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Xuất ảnh thất bại.");
-
-      onCapture(blob);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Chụp ảnh thất bại.");
-    } finally {
-      setCapturing(false);
+    function resize() {
+      const c = overlayRef.current;
+      const p = c?.parentElement;
+      if (!c || !p) return;
+      c.width = p.clientWidth;
+      c.height = p.clientHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      drawStampOverlay(ctx, c.width, c.height, defaultHoleRadius(c.width, c.height));
     }
+
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [ready]);
+
+  function handleCapture() {
+    const video = videoRef.current;
+    if (!video || !ready) return;
+
+    // Crop giữa khung hình video theo đúng tỉ lệ OUTPUT_ASPECT (kiểu
+    // object-cover) trước khi vẽ vào canvas xuất ra.
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return;
+    const videoAspect = vw / vh;
+    let sx = 0, sy = 0, sw = vw, sh = vh;
+    if (videoAspect > OUTPUT_ASPECT) {
+      sw = vh * OUTPUT_ASPECT;
+      sx = (vw - sw) / 2;
+    } else {
+      sh = vw / OUTPUT_ASPECT;
+      sy = (vh - sh) / 2;
+    }
+
+    const shot = document.createElement("canvas");
+    shot.width = OUTPUT_WIDTH;
+    shot.height = OUTPUT_HEIGHT;
+    const ctx = shot.getContext("2d");
+    if (!ctx) return;
+
+    // Camera trước thì lật ngang cho giống soi gương (đúng cảm giác selfie).
+    if (facing === "user") {
+      ctx.translate(OUTPUT_WIDTH, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+
+    const stamped = applyStampMask(shot, defaultHoleRadius(OUTPUT_WIDTH, OUTPUT_HEIGHT));
+
+    setFlashing(true);
+    window.setTimeout(() => setFlashing(false), 180);
+
+    stamped.toBlob(
+      (blob) => {
+        if (blob) onCapture(blob, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+      },
+      "image/png" // bắt buộc PNG để giữ vùng trong suốt tại các lỗ răng cưa
+    );
   }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Đóng camera"
-        className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
-      >
-        <XIcon className="h-5 w-5" />
-      </button>
+      <div className="relative flex-1 overflow-hidden">
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          className={`h-full w-full object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+        />
+        <canvas ref={overlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden">
-        {error ? (
-          <p className="px-8 text-center text-sm text-white/80">{error}</p>
-        ) : (
-          <div className="relative aspect-square w-full max-w-md">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="h-full w-full object-cover"
-              style={{ transform: "scaleX(-1)" }}
-            />
-            {/* Overlay CHỈ để xem trước hình dạng khung tem — ảnh thật được bake
-                trực tiếp vào pixel ở canvas lúc bấm chụp (xem handleShutter).
-                4 dải viền riêng biệt, mỗi dải là 1 hàng lỗ tròn khoét đều
-                bằng mask-image repeating-radial-gradient (không dùng
-                clip-path zigzag vì đó là cạnh nhọn, không phải lỗ tròn). */}
-            {(["top", "bottom", "left", "right"] as const).map((edge) => {
-              const horizontal = edge === "top" || edge === "bottom";
-              const thickness = 16; // = holeSpacing dùng ở canvas thật (px hiển thị, không cần khớp chính xác vì chỉ preview)
-              const scallop =
-                "repeating-radial-gradient(circle at 50% 50%, transparent 0 6px, black 6.5px calc(50% + 0.5px))";
-              return (
-                <div
-                  key={edge}
-                  aria-hidden
-                  className="pointer-events-none absolute bg-[#faf6ee]"
-                  style={{
-                    top: edge === "top" ? 0 : edge === "bottom" ? undefined : 0,
-                    bottom: edge === "bottom" ? 0 : undefined,
-                    left: edge === "left" ? 0 : edge === "right" ? undefined : 0,
-                    right: edge === "right" ? 0 : undefined,
-                    height: horizontal ? thickness : "100%",
-                    width: horizontal ? "100%" : thickness,
-                    maskImage: scallop,
-                    WebkitMaskImage: scallop,
-                    maskRepeat: horizontal ? "repeat-x" : "repeat-y",
-                    WebkitMaskRepeat: horizontal ? "repeat-x" : "repeat-y",
-                    maskSize: horizontal ? `${thickness}px ${thickness}px` : `${thickness}px ${thickness}px`,
-                    WebkitMaskSize: horizontal ? `${thickness}px ${thickness}px` : `${thickness}px ${thickness}px`,
-                  }}
-                />
-              );
-            })}
+        {flashing && <div className="pointer-events-none absolute inset-0 bg-white animate-stamp-flash" />}
+
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-8 text-center text-sm text-white">
+            {error}
           </div>
         )}
-      </div>
 
-      <div className="flex items-center justify-center pb-10 pt-4">
         <button
           type="button"
-          onClick={handleShutter}
-          disabled={!ready || capturing || !!error}
-          aria-label="Chụp"
-          className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20 disabled:opacity-40"
+          onClick={onClose}
+          aria-label="Đóng camera"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
         >
-          {capturing ? (
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <CameraIcon className="h-6 w-6 text-white" />
-          )}
+          <XIcon className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+          aria-label="Đổi camera"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
+        >
+          <CameraFlipIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="flex items-center justify-center bg-black py-6">
+        <button
+          type="button"
+          onClick={handleCapture}
+          disabled={!ready}
+          aria-label="Chụp"
+          className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20 active:scale-95 disabled:opacity-40"
+        >
+          <span className="h-12 w-12 rounded-full bg-white" />
         </button>
       </div>
     </div>

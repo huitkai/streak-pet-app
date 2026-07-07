@@ -10,7 +10,7 @@ import {
   sendMessage,
   sendSticker,
   sendImage,
-  sendInstantPhoto,
+  sendStampPhoto,
   sendGif,
   sendVoice,
   editMessage,
@@ -24,8 +24,7 @@ import {
   fetchOlderMessages,
   fetchMessagesAround,
 } from "@/lib/actions";
-import { decodeMessage, encodeImage, encodeInstant, shouldShowTimeDivider } from "@/lib/message-format";
-import InstantCapture from "@/components/InstantCapture";
+import { decodeMessage, encodeImage, encodeStampPhoto, shouldShowTimeDivider } from "@/lib/message-format";
 import TimeText from "@/components/TimeText";
 import { StickerArt, type StickerId } from "@/components/Stickers";
 import StickerPicker from "@/components/StickerPicker";
@@ -36,6 +35,7 @@ import { ReplyQuoteInline, ReplyComposerBar } from "@/components/ReplyQuote";
 import PinnedBar from "@/components/PinnedBar";
 import SearchOverlay from "@/components/SearchOverlay";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import InstantCapture from "@/components/InstantCapture";
 import VoiceMessageBubble from "@/components/VoiceMessageBubble";
 import ForwardSheet from "@/components/ForwardSheet";
 import {
@@ -607,36 +607,45 @@ export default function ChatBox({
   }
 
   /**
-   * Nhận PNG đã bake sẵn khung tem răng cưa từ InstantCapture -> upload lên
-   * bucket "instant-photos" -> gửi thẳng luôn (giống Locket, không có bước
-   * xác nhận riêng — khác handleImageSelect ở chỗ không cho chọn lại).
+   * Nhận PNG đã có sẵn răng cưa từ <InstantCapture> (xem
+   * components/InstantCapture.tsx + lib/stamp-frame.ts) -> upload lên cùng
+   * bucket "chat-images" -> gửi bằng sendStampPhoto (khác sendImage ở cách
+   * mã hoá nội dung để client render không viền/không bo góc).
    */
-  async function handleInstantCapture(blob: Blob) {
+  async function handleStampCapture(blob: Blob, width: number, height: number) {
     setInstantCaptureOpen(false);
     shouldAutoScroll.current = true;
+    const replyToId = replyingTo?.id ?? null;
+    setReplyingTo(null);
     const localUrl = URL.createObjectURL(blob);
-
-    const optimistic: MessageRow = {
-      id: tempId(),
-      couple_id: coupleId,
-      sender_id: userId,
-      content: encodeInstant(localUrl),
-      reply_to_id: null,
-      created_at: new Date().toISOString(),
-      pending: true,
-    };
-    setMessages((prev) => [...prev, optimistic]);
+    setUploadPreview(localUrl);
 
     try {
       const supabase = createClient();
       const path = `${coupleId}/${userId}-${Date.now()}.png`;
+
       const { error: upErr } = await supabase.storage
-        .from("instant-photos")
+        .from("chat-images")
         .upload(path, blob, { upsert: false, cacheControl: "31536000", contentType: "image/png" });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from("instant-photos").getPublicUrl(path);
-      const res = await sendInstantPhoto(coupleId, pub.publicUrl);
+      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
+      const finalUrl = pub.publicUrl;
+
+      const optimistic: MessageRow = {
+        id: tempId(),
+        couple_id: coupleId,
+        sender_id: userId,
+        content: encodeStampPhoto(finalUrl, width, height),
+        reply_to_id: replyToId,
+        created_at: new Date().toISOString(),
+        pending: true,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      setUploadPreview(null);
+      URL.revokeObjectURL(localUrl);
+
+      const res = await sendStampPhoto(coupleId, finalUrl, width, height, replyToId);
       setMessages((prev) => {
         if (res?.message) {
           return prev.map((m) => (m.id === optimistic.id ? { ...res.message, pending: false } : m));
@@ -644,10 +653,9 @@ export default function ChatBox({
         return prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m));
       });
     } catch (err) {
-      console.error("gửi ảnh tức thì thất bại", err);
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m)));
-    } finally {
       URL.revokeObjectURL(localUrl);
+      setUploadPreview(null);
+      setUploadError(err instanceof Error ? err.message : "Gửi ảnh Chụp nhanh thất bại.");
     }
   }
 
@@ -1097,8 +1105,9 @@ export default function ChatBox({
                             )}
                           </button>
                         </div>
-                      ) : decoded.type === "instant" ? (
+                      ) : decoded.type === "stamp_photo" ? (
                         <div>
+                          {replyTarget && <ReplyQuoteInline message={replyTarget} mine={mine} onJump={() => jumpToMessage(replyTarget)} />}
                           <button
                             type="button"
                             onPointerDown={() => startLongPress(m.id)}
@@ -1111,17 +1120,26 @@ export default function ChatBox({
                               }
                               setLightbox(decoded.url);
                             }}
-                            className={`animate-bubble-in pointer-events-auto relative w-40 active:scale-[0.98] ${
+                            className={`animate-bubble-in pointer-events-auto relative block w-48 active:scale-[0.97] ${
                               m.pending ? "opacity-70" : ""
                             } ${m.failed ? "ring-2 ring-red-400" : ""}`}
                           >
-                            {/* PNG đã có sẵn hình răng cưa + alpha trong suốt ở các lỗ khoét
-                                (bake ở lib/stamp-frame.ts lúc chụp) — không bọc thêm div CSS
-                                giả răng cưa nào nữa, chỉ render đúng file ảnh. */}
-                            <img src={decoded.url} alt="Ảnh chụp tức thì" loading="lazy" className="w-full" />
+                            {/* Không rounded/overflow-hidden/nền: hình dạng răng cưa đã
+                               nằm sẵn trong file PNG (vùng trong suốt tại các lỗ khoét),
+                               bọc thêm khung ở đây sẽ đè mất viền tem đã bake. */}
+                            <img
+                              src={decoded.url}
+                              alt="Chụp nhanh"
+                              loading="lazy"
+                              style={{
+                                aspectRatio: decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined,
+                                filter: "drop-shadow(0 3px 6px rgb(0 0 0 / 0.25))",
+                              }}
+                              className="w-full object-contain"
+                            />
                             {m.pending && (
                               <span className="absolute inset-0 flex items-center justify-center">
-                                <span className="h-5 w-5 animate-spin rounded-full border-2 border-black/30 border-t-transparent" />
+                                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
                               </span>
                             )}
                           </button>
@@ -1360,6 +1378,10 @@ export default function ChatBox({
         />
       )}
 
+      {instantCaptureOpen && (
+        <InstantCapture onCapture={handleStampCapture} onClose={() => setInstantCaptureOpen(false)} />
+      )}
+
       <div className="safe-bottom relative z-10 border-t border-[var(--border)] bg-[var(--surface)] px-2.5 py-2">
         {pickerOpen && (
           <StickerPicker
@@ -1423,7 +1445,7 @@ export default function ChatBox({
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
                     <CameraIcon className="h-5 w-5" />
                   </span>
-                  Chụp
+                  Chụp nhanh
                 </button>
                 <button
                   type="button"
@@ -1447,9 +1469,6 @@ export default function ChatBox({
           ) : (
             <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-1.5">
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-              {instantCaptureOpen && (
-                <InstantCapture onCapture={handleInstantCapture} onClose={() => setInstantCaptureOpen(false)} />
-              )}
               <button
                 type="button"
                 onClick={() => {

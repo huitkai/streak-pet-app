@@ -242,6 +242,17 @@ export function ImageIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProp
   );
 }
 
+export function CameraFlipIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M17 8H5.5A1.5 1.5 0 0 0 4 9.5V15" />
+      <path d="M14.5 5.5 17 8l-2.5 2.5" />
+      <path d="M7 16h11.5a1.5 1.5 0 0 0 1.5-1.5V9" />
+      <path d="M9.5 18.5 7 16l2.5-2.5" />
+    </svg>
+  );
+}
+
 export function ReplyIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>

@@ -133,6 +133,15 @@ body {
   animation: pop-in 0.22s ease-out;
 }
 
+/* Nháy trắng khi bấm chụp ở tính năng "Chụp nhanh" (InstantCapture). */
+@keyframes stamp-flash {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.animate-stamp-flash {
+  animation: stamp-flash 0.18s ease-out forwards;
+}
+
 @keyframes shake-x {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
