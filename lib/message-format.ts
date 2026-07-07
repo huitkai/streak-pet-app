@@ -4,6 +4,7 @@ const STICKER_PREFIX = "::sticker::";
 const IMAGE_PREFIX = "::image::";
 const VOICE_PREFIX = "::voice::";
 const GIF_PREFIX = "::gif::";
+const INSTANT_PREFIX = "::instant::";
 
 /** Mã hoá 1 sticker thành nội dung lưu trong cột `content` có sẵn — không cần migrate DB. */
 export function encodeSticker(id: StickerId): string {
@@ -37,11 +38,24 @@ export function encodeGif(url: string, width?: number, height?: number): string 
   return `${GIF_PREFIX}${url}${dims}`;
 }
 
+/**
+ * Mã hoá 1 ảnh chụp tức thì (kiểu Locket) — khung tem răng cưa đã được bake
+ * sẵn vào file PNG (xem lib/stamp-frame.ts) trước khi upload lên bucket
+ * "instant-photos", nên khi render KHÔNG cần bọc thêm CSS giả hình dạng nào
+ * nữa — chỉ hiện đúng file PNG có alpha đó.
+ * Format: ::instant::<url>::<width>x<height>
+ */
+export function encodeInstant(url: string, width?: number, height?: number): string {
+  const dims = width && height ? `::${width}x${height}` : "";
+  return `${INSTANT_PREFIX}${url}${dims}`;
+}
+
 export type DecodedMessage =
   | { type: "text"; text: string }
   | { type: "sticker"; id: StickerId }
   | { type: "image"; url: string; width?: number; height?: number }
   | { type: "gif"; url: string; width?: number; height?: number }
+  | { type: "instant"; url: string; width?: number; height?: number }
   | { type: "voice"; url: string; duration: number };
 
 /** Khoảng cách tối thiểu (ms) giữa 2 tin để tự chèn 1 dòng mốc thời gian ở
@@ -102,6 +116,14 @@ export function decodeMessage(content: string): DecodedMessage {
     }
     return { type: "gif", url: rest };
   }
+  if (content.startsWith(INSTANT_PREFIX)) {
+    const rest = content.slice(INSTANT_PREFIX.length);
+    const match = rest.match(/^(.*)::(\d+)x(\d+)$/);
+    if (match) {
+      return { type: "instant", url: match[1], width: Number(match[2]), height: Number(match[3]) };
+    }
+    return { type: "instant", url: rest };
+  }
   return { type: "text", text: content };
 }
 
@@ -111,6 +133,7 @@ export function previewLabel(content: string): string {
   const d = decodeMessage(content);
   if (d.type === "sticker") return "Nhãn dán";
   if (d.type === "image") return "📷 Hình ảnh";
+  if (d.type === "instant") return "📸 Ảnh tức thì";
   if (d.type === "gif") return "GIF";
   if (d.type === "voice") return "🎙️ Tin nhắn thoại";
   return d.text.length > 80 ? d.text.slice(0, 80) + "…" : d.text;

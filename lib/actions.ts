@@ -5,7 +5,7 @@ import { stageForStreak } from "@/lib/pet-logic";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { StickerId } from "@/components/Stickers";
-import { encodeSticker, encodeImage, encodeVoice, encodeGif } from "@/lib/message-format";
+import { encodeSticker, encodeImage, encodeVoice, encodeGif, encodeInstant } from "@/lib/message-format";
 import type { PetSpeciesValue, PetAccessoryValue } from "@/lib/types";
 import { isAccessoryUnlocked } from "@/lib/pets";
 import { isValidHex } from "@/lib/theme";
@@ -569,6 +569,7 @@ export async function searchMessages(coupleId: string, query: string) {
     .not("content", "like", "::image::%")
     .not("content", "like", "::gif::%")
     .not("content", "like", "::voice::%")
+    .not("content", "like", "::instant::%")
     .order("created_at", { ascending: false })
     .limit(50);
   if (error) return [];
@@ -701,6 +702,37 @@ export async function sendImage(
       sender_id: user!.id,
       content: encodeImage(url, width, height),
       reply_to_id: replyToId ?? null,
+    })
+    .select()
+    .single();
+  if (msgError) return { error: msgError.message };
+
+  registerActivity(coupleId, user!.id).catch((e) =>
+    console.error("registerActivity failed", e)
+  );
+
+  return { message: inserted };
+}
+
+/**
+ * Gửi 1 ảnh chụp tức thì (kiểu Locket) đã được client upload thẳng lên
+ * bucket "instant-photos" — khung tem răng cưa đã bake sẵn vào file PNG
+ * (xem lib/stamp-frame.ts), hàm này chỉ ghi đường dẫn vào bảng messages.
+ * Không nhận replyToId vì chụp = gửi luôn, không có bước reply/xác nhận.
+ */
+export async function sendInstantPhoto(coupleId: string, url: string, width?: number, height?: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: inserted, error: msgError } = await supabase
+    .from("messages")
+    .insert({
+      couple_id: coupleId,
+      sender_id: user!.id,
+      content: encodeInstant(url, width, height),
     })
     .select()
     .single();
