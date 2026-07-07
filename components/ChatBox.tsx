@@ -23,7 +23,8 @@ import {
   fetchOlderMessages,
   fetchMessagesAround,
 } from "@/lib/actions";
-import { decodeMessage, encodeImage, formatMessageTime, shouldShowTimeDivider } from "@/lib/message-format";
+import { decodeMessage, encodeImage, shouldShowTimeDivider } from "@/lib/message-format";
+import TimeText from "@/components/TimeText";
 import { StickerArt, type StickerId } from "@/components/Stickers";
 import StickerPicker from "@/components/StickerPicker";
 import ReactionPicker from "@/components/ReactionPicker";
@@ -898,7 +899,7 @@ export default function ChatBox({
                 <div key={m.id} id={`msg-${m.id}`} className={fadingIds.has(m.id) ? "animate-bubble-out overflow-hidden" : undefined}>
                   {shouldShowTimeDivider(m, prevMsg) && (
                     <p className="my-2.5 text-center text-[10px] font-medium tracking-wide text-[var(--muted)]">
-                      {formatMessageTime(m.created_at)}
+                      <TimeText iso={m.created_at} />
                     </p>
                   )}
                   <div
@@ -1139,7 +1140,7 @@ export default function ChatBox({
 
                   {timeRevealed && (
                     <p className={`mb-1 text-[10px] text-[var(--muted)] ${mine ? "text-right pr-7" : "text-left pl-7"}`}>
-                      {formatMessageTime(m.created_at)}
+                      <TimeText iso={m.created_at} />
                     </p>
                   )}
 

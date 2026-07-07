@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { searchMessages } from "@/lib/actions";
-import { formatMessageTime } from "@/lib/message-format";
+import TimeText from "@/components/TimeText";
 import type { MessageRow } from "@/lib/types";
 import { ArrowLeftIcon, SearchIcon, XIcon } from "@/components/icons";
 
@@ -96,7 +96,7 @@ export default function SearchOverlay({
             onClick={() => onJump(m)}
             className="flex w-full flex-col items-start gap-0.5 border-b border-[var(--border)] px-4 py-3 text-left active:bg-black/5"
           >
-            <span className="text-[11px] text-[var(--muted)]">{formatMessageTime(m.created_at)}</span>
+            <span className="text-[11px] text-[var(--muted)]"><TimeText iso={m.created_at} /></span>
             <span className="line-clamp-2 text-sm text-[var(--foreground)]">{highlight(m.content)}</span>
           </button>
         ))}

@@ -58,6 +58,13 @@ export default function ChatHeader({
     const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
     return () => window.clearInterval(t);
   }, []);
+  // `formatLastSeen` tính theo Date.now() của máy đang chạy code — trên
+  // server (SSR) và trên trình duyệt (hydrate) là 2 thời điểm/timezone khác
+  // nhau, nên nếu render ngay từ đầu sẽ gây lệch HTML server/client (lỗi
+  // React #418, crash trang khi mở 1 đoạn chat). Chỉ render chữ này sau khi
+  // đã mount xong ở client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // ---- Phát hiện pet TIẾN HÓA lên giai đoạn mới -> bật hiệu ứng ăn mừng.
   // Không ăn mừng ngay lần mở app đầu tiên (chỉ ghi nhận mốc hiện tại), chỉ
@@ -150,7 +157,7 @@ export default function ChatHeader({
                 isPartnerOnline ? "font-medium text-green-600" : "text-[var(--muted)]"
               }`}
             >
-              {isPartnerOnline ? "Đang hoạt động" : formatLastSeen(partner?.last_seen)}
+              {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
             </span>
           </div>
         </Link>

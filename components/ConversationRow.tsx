@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import Avatar from "@/components/Avatar";
 import FlameBadge from "@/components/FlameBadge";
 import { PinIcon, BellOffIcon } from "@/components/icons";
-import { formatMessageTime } from "@/lib/message-format";
+import TimeText from "@/components/TimeText";
 import { usePartnerOnline } from "@/lib/presence";
 import { setConversationFlag } from "@/lib/actions";
 import type { ConversationSummary } from "@/lib/types";
@@ -138,7 +138,7 @@ export default function ConversationRow({
               <div className="flex shrink-0 items-center gap-1.5">
                 {conversation.lastMessageAt && (
                   <span className="text-[11px] text-[var(--muted)]">
-                    {formatMessageTime(conversation.lastMessageAt)}
+                    <TimeText iso={conversation.lastMessageAt} />
                   </span>
                 )}
                 <FlameBadge streak={conversation.currentStreak} size="sm" />

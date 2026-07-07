@@ -49,6 +49,68 @@ export function usePresenceHeartbeat(userId: string) {
   }, [userId]);
 }
 
+/**
+ * QUAN TRỌNG: nhiều nơi trong UI cùng mount `usePartnerOnline` cho CÙNG 1
+ * coupleId trong cùng 1 lúc (vd: ChatHeader của khung chat + ConversationRow
+ * trong danh sách hội thoại ở layout 2 cột trên PC). Nếu mỗi hook tự tạo
+ * riêng 1 `supabase.channel(\`presence-${coupleId}\`)` thì 2 channel trùng
+ * tên (trùng "topic") sẽ đụng nhau: channel thứ 2 gọi `.on(...)` SAU KHI
+ * channel thứ 1 (cùng topic) đã `.subscribe()` xong, dẫn tới lỗi
+ * "cannot add `presence` callbacks ... after `subscribe()`" và làm sập cả
+ * trang (đúng lỗi khi bấm vào 1 đoạn chat trên PC).
+ *
+ * Giải pháp: dùng 1 channel DÙNG CHUNG cho mỗi coupleId, đếm số hook đang
+ * "thuê" (refcount), chỉ tạo/subscribe channel khi hook đầu tiên mount và
+ * chỉ removeChannel khi hook cuối cùng unmount.
+ */
+type PresenceEntry = {
+  channel: ReturnType<ReturnType<typeof createClient>["channel"]>;
+  listeners: Set<() => void>;
+  refCount: number;
+};
+const presenceChannels = new Map<string, PresenceEntry>();
+
+function subscribeToPartnerPresence(coupleId: string, userId: string, onSync: () => void): () => void {
+  let entry = presenceChannels.get(coupleId);
+
+  if (!entry) {
+    const supabase = createClient();
+    const channel = supabase.channel(`presence-${coupleId}`, {
+      config: { presence: { key: userId } },
+    });
+    const listeners = new Set<() => void>();
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        listeners.forEach((cb) => cb());
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ online_at: new Date().toISOString() });
+          listeners.forEach((cb) => cb());
+        }
+      });
+
+    entry = { channel, listeners, refCount: 0 };
+    presenceChannels.set(coupleId, entry);
+  }
+
+  entry.refCount += 1;
+  entry.listeners.add(onSync);
+
+  return () => {
+    const current = presenceChannels.get(coupleId);
+    if (!current) return;
+    current.listeners.delete(onSync);
+    current.refCount -= 1;
+    if (current.refCount <= 0) {
+      const supabase = createClient();
+      supabase.removeChannel(current.channel);
+      presenceChannels.delete(coupleId);
+    }
+  };
+}
+
 /** Theo dõi xem đối phương có đang "có mặt" (mở app) ngay lúc này không,
  * qua Supabase Realtime Presence — không cần cột DB, tự dọn dẹp khi rời trang. */
 export function usePartnerOnline(coupleId: string, userId: string, partnerId: string | null): boolean {
@@ -56,25 +118,17 @@ export function usePartnerOnline(coupleId: string, userId: string, partnerId: st
 
   useEffect(() => {
     if (!coupleId || !partnerId) return;
-    const supabase = createClient();
-    const channel = supabase.channel(`presence-${coupleId}`, {
-      config: { presence: { key: userId } },
-    });
 
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        setOnline(Boolean(state[partnerId]?.length));
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
+    const checkState = () => {
+      const entry = presenceChannels.get(coupleId);
+      const state = entry?.channel.presenceState<{ online_at: string }>();
+      setOnline(Boolean(state?.[partnerId]?.length));
     };
+
+    const unsubscribe = subscribeToPartnerPresence(coupleId, userId, checkState);
+    checkState();
+
+    return unsubscribe;
   }, [coupleId, userId, partnerId]);
 
   return online;
