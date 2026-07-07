@@ -71,7 +71,7 @@ export default async function ChatPage() {
   const myNicknameRaw = myNicknameForPartner(couple, user.id);
 
   return (
-    <AppShell mode="chat">
+    <AppShell mode="chat" myUserId={user.id} myAvatarUrl={myProfile?.avatar_url} myDisplayName={myProfile?.display_name}>
       <ChatThemeProvider
         coupleId={couple.id}
         initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}

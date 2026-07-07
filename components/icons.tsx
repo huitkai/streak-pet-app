@@ -433,6 +433,46 @@ export function PaletteIcon({ className = "w-5 h-5", strokeWidth = 1.7 }: IconPr
   );
 }
 
+/** Nhà (Home) — dùng cho thanh điều hướng kiểu Instagram (mobile tab bar /
+ * desktop nav rail). */
+export function HomeIcon({ className = "w-5 h-5", strokeWidth = 1.8, filled = false }: IconProps & { filled?: boolean }) {
+  if (filled) {
+    return (
+      <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+        <path d="M12 2.6 2.4 10.8c-.4.35-.15 1 .35 1h2.15v8.1c0 .6.5 1.1 1.1 1.1h4.4v-6.2h3.2V21h4.4c.6 0 1.1-.5 1.1-1.1v-8.1h2.15c.5 0 .75-.65.35-1L12 2.6Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M3.5 11.2 12 3.5l8.5 7.7" />
+      <path d="M5.5 9.8V19a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4.3h4V19a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.8" />
+    </svg>
+  );
+}
+
+/** La bàn (Explore/Search) — icon dạng compass giống tab Khám phá của Instagram. */
+export function CompassIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <circle cx="12" cy="12" r="9.2" />
+      <path d="M15.3 8.7 13 13l-4.3 2.3L11 11l4.3-2.3Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Reels — khung chữ nhật bo góc với 2 nét chéo nhỏ ở 2 góc trên, gợi nhớ icon Reels. */
+export function ReelIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <rect x="3" y="4.5" width="18" height="15" rx="4" />
+      <path d="M8 4.5 11 9" />
+      <path d="M14 4.5 17 9" />
+      <path d="M10.3 11.3v4.2l3.8-2.1-3.8-2.1Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Kính lúp tìm kiếm cho danh sách hội thoại (kích thước nhỏ hơn SearchIcon 1 chút
  * về mặt dùng, nhưng hiện tại tái sử dụng cùng path cho nhất quán — giữ tên riêng
  * để chỗ gọi rõ ngữ nghĩa). */

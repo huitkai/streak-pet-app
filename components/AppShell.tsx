@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import ConversationListClient from "@/components/ConversationListClient";
 import EmptyChatState from "@/components/EmptyChatState";
+import DesktopNavRail from "@/components/DesktopNavRail";
+import MobileTabBar from "@/components/MobileTabBar";
 import type { ConversationSummary, ProfileRow } from "@/lib/types";
 
 type SidebarData = {
@@ -28,9 +30,18 @@ type SidebarData = {
 export default function AppShell({
   mode,
   children,
+  myUserId = null,
+  myAvatarUrl = null,
+  myDisplayName = null,
 }: {
   mode: "list" | "chat";
   children: React.ReactNode;
+  /** Dùng để hiện avatar ở nav rail (desktop) / tab bar (mobile). Ở mode="chat"
+   * page.tsx đã có sẵn user.id/myProfile nên truyền thẳng vào; ở mode="list"
+   * cũng vậy. Không bắt buộc — thiếu thì nav vẫn hiện, chỉ ẩn avatar. */
+  myUserId?: string | null;
+  myAvatarUrl?: string | null;
+  myDisplayName?: string | null;
 }) {
   const [sidebarData, setSidebarData] = useState<SidebarData | null>(null);
 
@@ -51,36 +62,46 @@ export default function AppShell({
     };
   }, [mode]);
 
+  const effectiveUserId = myUserId ?? sidebarData?.myUserId ?? null;
+  const effectiveAvatar = myAvatarUrl ?? sidebarData?.myProfile?.avatar_url ?? null;
+  const effectiveName = myDisplayName ?? sidebarData?.myProfile?.display_name ?? null;
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden md:grid md:grid-cols-[380px_1fr]">
-      <div
-        className={
-          mode === "list"
-            ? "flex flex-1 flex-col overflow-hidden md:border-r md:border-[var(--border)]"
-            : "hidden overflow-hidden md:flex md:flex-col md:border-r md:border-[var(--border)]"
-        }
-      >
-        {mode === "list" ? (
-          children
-        ) : sidebarData ? (
-          <ConversationListClient
-            conversations={sidebarData.conversations}
-            myUserId={sidebarData.myUserId}
-            myProfile={sidebarData.myProfile}
-            waitingInviteCode={sidebarData.waitingInviteCode}
-          />
-        ) : (
-          <div className="flex flex-1 items-center justify-center text-sm text-[var(--muted)]">Đang tải…</div>
-        )}
+    <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+      <DesktopNavRail myUserId={effectiveUserId} avatarUrl={effectiveAvatar} displayName={effectiveName} />
+
+      <div className="flex flex-1 flex-col overflow-hidden md:grid md:grid-cols-[380px_1fr]">
+        <div
+          className={
+            mode === "list"
+              ? "flex flex-1 flex-col overflow-hidden md:border-r md:border-[var(--border)]"
+              : "hidden overflow-hidden md:flex md:flex-col md:border-r md:border-[var(--border)]"
+          }
+        >
+          {mode === "list" ? (
+            children
+          ) : sidebarData ? (
+            <ConversationListClient
+              conversations={sidebarData.conversations}
+              myUserId={sidebarData.myUserId}
+              myProfile={sidebarData.myProfile}
+              waitingInviteCode={sidebarData.waitingInviteCode}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-sm text-[var(--muted)]">Đang tải…</div>
+          )}
+        </div>
+
+        <div
+          className={
+            mode === "list" ? "hidden md:flex md:flex-col md:overflow-hidden" : "flex flex-1 flex-col overflow-hidden"
+          }
+        >
+          {mode === "list" ? <EmptyChatState /> : children}
+        </div>
       </div>
 
-      <div
-        className={
-          mode === "list" ? "hidden md:flex md:flex-col md:overflow-hidden" : "flex flex-1 flex-col overflow-hidden"
-        }
-      >
-        {mode === "list" ? <EmptyChatState /> : children}
-      </div>
+      {mode === "list" && <MobileTabBar myUserId={effectiveUserId} avatarUrl={effectiveAvatar} displayName={effectiveName} />}
     </div>
   );
 }

@@ -63,7 +63,10 @@ export default function ConversationListClient({
           </div>
         ) : (
           <>
-            <h1 className="text-xl font-bold text-[var(--foreground)]">Tin nhắn</h1>
+            <span className="font-serif text-[22px] italic tracking-tight text-[var(--foreground)] md:hidden">
+              Streak&nbsp;Pet
+            </span>
+            <h1 className="hidden text-xl font-bold text-[var(--foreground)] md:block">Tin nhắn</h1>
             <div className="flex items-center gap-1">
               {conversations.length > 0 && (
                 <button
@@ -83,7 +86,7 @@ export default function ConversationListClient({
               >
                 <PlusIcon className="h-[18px] w-[18px]" />
               </button>
-              <Link href={`/profile/${myUserId}`} aria-label="Hồ sơ của bạn" className="active:scale-95">
+              <Link href={`/profile/${myUserId}`} aria-label="Hồ sơ của bạn" className="active:scale-95 md:hidden">
                 <Avatar url={myProfile?.avatar_url} name={myProfile?.display_name} size={34} ring />
               </Link>
             </div>

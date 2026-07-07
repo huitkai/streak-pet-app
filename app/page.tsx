@@ -88,7 +88,7 @@ export default async function Home({
   }
 
   return (
-    <AppShell mode="list">
+    <AppShell mode="list" myUserId={user.id} myAvatarUrl={myProfile?.avatar_url} myDisplayName={myProfile?.display_name}>
       <div className="safe-top safe-bottom flex flex-1 flex-col bg-[var(--background)]">
         {confirmed === "1" && (
           <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
