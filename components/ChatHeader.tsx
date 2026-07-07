@@ -1,0 +1,217 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { PetRow, ProfileRow, StreakRow, PetStage } from "@/lib/types";
+import { STAGE_ORDER, variantForCouple, type PetSpecies } from "@/lib/pets";
+import FlameBadge from "@/components/FlameBadge";
+import PetSheet from "@/components/PetSheet";
+import ChatSettingsSheet from "@/components/ChatSettingsSheet";
+import PetEvolutionCelebration from "@/components/PetEvolutionCelebration";
+import Avatar from "@/components/Avatar";
+import { ArrowLeftIcon, MoreIcon } from "@/components/icons";
+import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
+import { useChatTheme } from "@/lib/chat-theme-context";
+
+export default function ChatHeader({
+  coupleId,
+  userId,
+  partnerId,
+  petName,
+  species,
+  initialPet,
+  initialStreak,
+  initialNickname,
+  initialNicknameRaw,
+  partnerProfile,
+}: {
+  coupleId: string;
+  userId: string;
+  partnerId: string | null;
+  petName: string;
+  species: PetSpecies;
+  initialPet: PetRow;
+  initialStreak: StreakRow;
+  /** Tên hiệu lực đã hiển thị cho đối phương (biệt danh nếu có, fallback display_name). */
+  initialNickname: string;
+  /** Biệt danh THÔ mình đã đặt (rỗng nếu chưa đặt) — dùng để điền sẵn vào sheet. */
+  initialNicknameRaw: string;
+  myProfile: ProfileRow | null;
+  partnerProfile: ProfileRow | null;
+}) {
+  const [pet, setPet] = useState(initialPet);
+  const [streak, setStreak] = useState(initialStreak);
+  const [partner, setPartner] = useState(partnerProfile);
+  const { themeColor, setThemeColor, accessory } = useChatTheme();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nickname, setNickname] = useState(initialNickname);
+  const [nicknameRaw, setNicknameRaw] = useState(initialNicknameRaw);
+  const [celebrateStage, setCelebrateStage] = useState<PetStage | null>(null);
+  const isPartnerOnline = usePartnerOnline(coupleId, userId, partnerId);
+  const variant = useMemo(() => variantForCouple(coupleId, species), [coupleId, species]);
+  // Chỉ để ép re-render mỗi phút, giúp chữ "Hoạt động X phút trước" luôn khớp
+  // thời gian thực thay vì đứng yên từ lúc trang được tải.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // ---- Phát hiện pet TIẾN HÓA lên giai đoạn mới -> bật hiệu ứng ăn mừng.
+  // Không ăn mừng ngay lần mở app đầu tiên (chỉ ghi nhận mốc hiện tại), chỉ
+  // ăn mừng khi có 1 lần cập nhật thật sự đổi stage lên cao hơn trong phiên này.
+  const prevStageRef = useRef<PetStage | null>(null);
+  useEffect(() => {
+    const storageKey = `pet-evo-seen-${coupleId}`;
+    if (prevStageRef.current === null) {
+      const seen = typeof window !== "undefined" ? window.localStorage.getItem(storageKey) : null;
+      prevStageRef.current = (seen as PetStage | null) ?? pet.stage;
+      return;
+    }
+    if (pet.stage !== prevStageRef.current && STAGE_ORDER.indexOf(pet.stage) > STAGE_ORDER.indexOf(prevStageRef.current)) {
+      setCelebrateStage(pet.stage);
+      if (typeof window !== "undefined") window.localStorage.setItem(storageKey, pet.stage);
+    }
+    prevStageRef.current = pet.stage;
+  }, [pet.stage, coupleId]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const petChannel = supabase
+      .channel(`header-pet-${coupleId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pets", filter: `couple_id=eq.${coupleId}` },
+        (payload) => setPet(payload.new as PetRow)
+      )
+      .subscribe();
+
+    const streakChannel = supabase
+      .channel(`header-streak-${coupleId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "streaks", filter: `couple_id=eq.${coupleId}` },
+        (payload) => setStreak(payload.new as StreakRow)
+      )
+      .subscribe();
+
+    // Channel `couples` (theme + phụ kiện) đã gộp vào `couple-sync-${coupleId}`
+    // trong ChatThemeProvider (lib/chat-theme-context.tsx) — accessory đọc qua
+    // useChatTheme() ở trên, không mở channel riêng ở đây nữa.
+
+    const profileChannel = supabase
+      .channel(`header-profiles-${coupleId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        const p = payload.new as ProfileRow;
+        if (p.id !== userId) {
+          setPartner(p);
+          // Chỉ cập nhật tên hiển thị theo display_name mới nếu MÌNH chưa đặt
+          // biệt danh riêng — có biệt danh rồi thì luôn ưu tiên biệt danh.
+          setNickname((current) => (nicknameRaw ? current : p.display_name || "Người ấy"));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(petChannel);
+      supabase.removeChannel(streakChannel);
+      supabase.removeChannel(profileChannel);
+    };
+  }, [coupleId, userId, nicknameRaw]);
+
+  return (
+    <>
+      <header className="safe-top relative z-20 flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)]/95 px-2.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] backdrop-blur-sm">
+        <Link
+          href="/"
+          aria-label="Về danh sách trò chuyện"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-black/5"
+        >
+          <ArrowLeftIcon className="h-5 w-5" />
+        </Link>
+
+        {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ, giống TikTok */}
+        <Link
+          href={partnerId ? `/profile/${partnerId}` : "#"}
+          className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
+        >
+          <span className="relative shrink-0">
+            <Avatar url={partner?.avatar_url} name={nickname || petName} size={40} ring />
+            {isPartnerOnline && (
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-green-500" />
+            )}
+          </span>
+          <div className="flex min-w-0 flex-col items-start text-left">
+            <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
+            <span
+              className={`truncate text-[11px] ${
+                isPartnerOnline ? "font-medium text-green-600" : "text-[var(--muted)]"
+              }`}
+            >
+              {isPartnerOnline ? "Đang hoạt động" : formatLastSeen(partner?.last_seen)}
+            </span>
+          </div>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-label="Xem chuỗi và pet"
+          className="flex shrink-0 items-center gap-1 transition active:scale-95"
+        >
+          <FlameBadge streak={streak.current_streak} size="xl" variant="pill" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Tuỳ chỉnh đoạn chat"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+        >
+          <MoreIcon className="h-5 w-5" />
+        </button>
+      </header>
+
+      {sheetOpen && (
+        <PetSheet
+          coupleId={coupleId}
+          petName={petName}
+          species={species}
+          variant={variant}
+          accessory={accessory}
+          pet={pet}
+          streak={streak}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
+
+      {settingsOpen && (
+        <ChatSettingsSheet
+          coupleId={coupleId}
+          currentThemeColor={themeColor}
+          currentNickname={nicknameRaw}
+          partnerRealName={partner?.display_name || "Người ấy"}
+          onClose={() => setSettingsOpen(false)}
+          onThemeChange={setThemeColor}
+          onNicknameChange={(name) => {
+            setNicknameRaw(name);
+            setNickname(name || partner?.display_name || "Người ấy");
+          }}
+        />
+      )}
+
+      {celebrateStage && (
+        <PetEvolutionCelebration
+          petName={petName}
+          species={species}
+          stage={celebrateStage}
+          variant={variant}
+          accessory={accessory}
+          onDone={() => setCelebrateStage(null)}
+        />
+      )}
+    </>
+  );
+}

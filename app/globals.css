@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fff5f7;
+  --foreground: #2c2230;
+  --brand: #ec4f83;
+  --brand-dark: #c73868;
+  --brand-light: #ffe1ea;
+  --surface: #ffffff;
+  --border: #f3d9e2;
+  --muted: #8a7b85;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-light: var(--brand-light);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Phản hồi chạm tức thì trên toàn app:
+   - touch-action: manipulation bỏ khoảng trễ ~300ms chờ double-tap-to-zoom
+     mà một số trình duyệt di động vẫn áp cho thẻ <a>/<button> dù đã có
+     viewport meta — đảm bảo trạng thái :active kích hoạt ngay khi chạm.
+   - Mọi phần tử có thể bấm dùng transition RẤT ngắn (~80ms) cho transform/
+     background, để cảm giác "bấm phát ăn ngay" thay vì mềm/trễ. */
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+a:active, button:active, [role="button"]:active {
+  transition-duration: 80ms !important;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 14px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes pet-breathe {
+  0%, 100% { transform: scale(var(--pet-scale, 1)) translateY(0); }
+  50% { transform: scale(calc(var(--pet-scale, 1) * 1.015)) translateY(-2px); }
+}
+.animate-pet-breathe {
+  animation: pet-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes pet-tap {
+  0% { transform: scale(var(--pet-scale, 1)); }
+  30% { transform: scale(calc(var(--pet-scale, 1) * 1.12)) rotate(-3deg); }
+  60% { transform: scale(calc(var(--pet-scale, 1) * 0.96)) rotate(2deg); }
+  100% { transform: scale(var(--pet-scale, 1)); }
+}
+.animate-pet-tap {
+  animation: pet-tap 0.55s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes pet-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+.animate-pet-blink {
+  animation: pet-blink 4.5s ease-in-out infinite;
+}
+
+@keyframes pet-sparkle {
+  0% { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(-26px) scale(1.15) rotate(50deg); opacity: 0; }
+}
+.animate-pet-sparkle {
+  animation: pet-sparkle 0.7s ease-out forwards;
+}
+
+@keyframes pet-aura {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+}
+.animate-pet-aura {
+  animation: pet-aura 2.4s ease-in-out infinite;
+}
+
+@keyframes pet-wing {
+  0%, 100% { transform: scaleX(1) rotate(0deg); }
+  50% { transform: scaleX(0.94) rotate(-2deg); }
+}
+.animate-pet-wing {
+  animation: pet-wing 2.6s ease-in-out infinite;
+  transform-origin: 50% 55%;
+}
+
+@keyframes pet-tailwag {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(6deg); }
+}
+.animate-pet-tailwag {
+  animation: pet-tailwag 1.8s ease-in-out infinite;
+  transform-origin: 150px 140px;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float-slow {
+  animation: float-slow 3.4s ease-in-out infinite;
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop-in {
+  animation: pop-in 0.22s ease-out;
+}
+
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.animate-shake {
+  animation: shake-x 0.35s ease-in-out;
+}
+
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  33% { transform: scale(1.06) rotate(-2deg); }
+  66% { transform: scale(0.97) rotate(2deg); }
+}
+.animate-flame {
+  animation: flame-flicker 1.8s ease-in-out infinite;
+}
+
+@keyframes flame-flicker-soft {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.025) rotate(-0.6deg); }
+}
+.animate-flame-soft {
+  animation: flame-flicker-soft 2.6s ease-in-out infinite;
+}
+
+@keyframes dock-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-dock-up {
+  animation: dock-up 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes voice-bar {
+  0%, 100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.animate-voice-bar {
+  animation: voice-bar 0.9s ease-in-out infinite;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-sheet-up {
+  animation: sheet-up 0.28s cubic-bezier(.32,.72,0,1);
+}
+
+@keyframes bubble-in {
+  0% { transform: translateY(6px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.animate-bubble-in {
+  animation: bubble-in 0.18s ease-out;
+}
+
+/* Mục 7: tin bị xoá/thu hồi khỏi màn hình biến mất mượt thay vì đột ngột. */
+@keyframes bubble-out {
+  0% { transform: scale(1); opacity: 1; max-height: 200px; }
+  100% { transform: scale(0.92); opacity: 0; max-height: 0; }
+}
+.animate-bubble-out {
+  animation: bubble-out 0.18s ease-in forwards;
+}
+
+/* Mục 7: shimmer skeleton dùng chung cho "đang tải tin cũ hơn", ảnh/GIF/
+   sticker đang tải, và ConversationRow skeleton trong app/loading.tsx —
+   1 lớp gradient quét ngang lặp lại, nhẹ hơn nhiều so với animate-spin cho
+   các khối lớn (không xoay cả icon mà chỉ quét sáng bề mặt). */
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background-image: linear-gradient(90deg, var(--border) 25%, rgba(0, 0, 0, 0.06) 37%, var(--border) 63%);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.4s ease-in-out infinite;
+}
+
+/* Streak badge: chỉ 1 lần "pop" nhẹ khi số thay đổi, không lặp lại — tránh
+   gây xao nhãng liên tục trong lúc đang nhắn tin. */
+@keyframes streak-pop {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-streak-pop {
+  animation: streak-pop 0.3s ease-out;
+}
+
+/* Pet "phấn khích" — mốc streak cực cao, pet nhảy cẫng lên thay vì chỉ thở nhẹ */
+@keyframes pet-excited {
+  0%, 100% { transform: scale(var(--pet-scale, 1)) translateY(0) rotate(0deg); }
+  25% { transform: scale(calc(var(--pet-scale, 1) * 1.05)) translateY(-6px) rotate(-2deg); }
+  50% { transform: scale(var(--pet-scale, 1)) translateY(0) rotate(0deg); }
+  75% { transform: scale(calc(var(--pet-scale, 1) * 1.05)) translateY(-6px) rotate(2deg); }
+}
+.animate-pet-excited {
+  animation: pet-excited 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pet-breathe,
+  .animate-pet-tap,
+  .animate-pet-blink,
+  .animate-pet-sparkle,
+  .animate-pet-aura,
+  .animate-pet-wing,
+  .animate-pet-tailwag,
+  .animate-float-slow,
+  .animate-flame-soft,
+  .animate-streak-pop,
+  .animate-pet-excited {
+    animation: none !important;
+  }
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
