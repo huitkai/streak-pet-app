@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { XIcon, CameraFlipIcon } from "@/components/icons";
-import { applyStampMask, defaultHoleRadius, drawStampOverlay } from "@/lib/stamp-frame";
+import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stamp-frame";
 
 /** Tỉ lệ khung ảnh xuất ra — dọc 4:5 giống khung ảnh Locket/Instagram, không
  * lấy nguyên khung video (thường 16:9) để tránh ảnh quá dẹt. */
@@ -123,14 +123,14 @@ export default function InstantCapture({
     }
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
-    const stamped = applyStampMask(shot, defaultHoleRadius(OUTPUT_WIDTH, OUTPUT_HEIGHT));
+    const stamped = buildStampPhoto(shot);
 
     setFlashing(true);
     window.setTimeout(() => setFlashing(false), 180);
 
     stamped.toBlob(
       (blob) => {
-        if (blob) onCapture(blob, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+        if (blob) onCapture(blob, stamped.width, stamped.height);
       },
       "image/png" // bắt buộc PNG để giữ vùng trong suốt tại các lỗ răng cưa
     );

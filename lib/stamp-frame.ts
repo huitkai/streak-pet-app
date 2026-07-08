@@ -1,16 +1,21 @@
 /**
  * Khung "tem bưu chính" (perforated stamp edge) cho tính năng Chụp nhanh.
  *
- * Cách dựng: chia mỗi cạnh thành N đoạn bằng nhau, tại tâm mỗi đoạn "đục"
- * một hình tròn bán kính `holeRadius` nằm đúng trên đường biên (một nửa hình
- * tròn nằm trong ảnh, một nửa nằm ngoài) — phần nằm trong ảnh bị khoét đi,
- * tạo ra các vết lõm bán nguyệt liên tiếp dọc 4 cạnh, đúng kiểu răng cưa tem.
+ * Cấu trúc đúng như tem thật, gồm 2 lớp:
+ *  1. Một viền giấy màu trắng ngà bao quanh ảnh (addStampBorder) — răng cưa
+ *     được cắt vào LỚP VIỀN NÀY, không đụng vào nội dung ảnh. Đây là lý do
+ *     tem thật luôn nhìn "sạch" dù răng cưa là các vết khoét: chúng cắt vào
+ *     giấy trơn màu đều, không cắt trực tiếp lên chi tiết ảnh.
+ *  2. Mặt nạ răng cưa (applyStampMask) khoét các lỗ bán nguyệt đều nhau dọc
+ *     4 cạnh của LỚP VIỀN đó.
  *
- * Cùng 1 hàm computeStampGrid() được dùng cho cả:
- *  - overlay hiển thị lúc đang xem camera (preview, không cần chính xác 100%)
- *  - applyStampMask() bake thật vào canvas ảnh đã chụp (bắt buộc chính xác,
- *    vì đây là hình dạng sẽ lưu vào file PNG gửi đi)
- * để 2 nơi luôn khớp nhau, tránh trường hợp preview một kiểu, ảnh ra một kiểu.
+ * Cách dựng lỗ: chia mỗi cạnh thành N đoạn bằng nhau, tại tâm mỗi đoạn "đục"
+ * một hình tròn bán kính `holeRadius` nằm đúng trên đường biên (một nửa hình
+ * tròn nằm trong, một nửa nằm ngoài) — phần nằm trong bị khoét đi.
+ *
+ * Cùng 1 hàm computeStampGrid() được dùng cho cả overlay preview (lúc đang
+ * xem camera, không cần chính xác 100%) và applyStampMask() (bake thật vào
+ * canvas cuối cùng) để 2 nơi luôn khớp nhau về mật độ răng cưa.
  */
 
 export interface StampGrid {
@@ -31,17 +36,47 @@ export function computeStampGrid(width: number, height: number, holeRadius: numb
   return { nx, ny, stepX: width / nx, stepY: height / ny };
 }
 
-/** Bán kính lỗ mặc định — tỉ lệ theo cạnh ngắn của ảnh để lỗ không bị quá to/nhỏ
- * bất kể ảnh chụp vuông hay dọc. */
+/** Bán kính lỗ mặc định — tỉ lệ theo cạnh ngắn của khung (đã tính cả viền
+ * trắng) để răng cưa to, tròn, rõ ràng như tem thật thay vì lấm tấm nhỏ vụn. */
 export function defaultHoleRadius(width: number, height: number): number {
-  return Math.max(8, Math.round(Math.min(width, height) * 0.035));
+  return Math.max(12, Math.round(Math.min(width, height) * 0.05));
+}
+
+/** Độ dày viền giấy trắng ngà bao quanh ảnh trước khi đục răng cưa. */
+export function defaultBorderWidth(width: number, height: number): number {
+  return Math.max(16, Math.round(Math.min(width, height) * 0.06));
+}
+
+/**
+ * Bọc 1 khung viền giấy màu trắng ngà quanh ảnh — bước bắt buộc TRƯỚC khi
+ * gọi applyStampMask(), để răng cưa cắt vào viền giấy chứ không cắt thẳng
+ * vào nội dung ảnh. Trả về canvas MỚI lớn hơn ảnh gốc `borderWidth` mỗi bên.
+ */
+export function addStampBorder(
+  photoCanvas: HTMLCanvasElement,
+  borderWidth?: number,
+  borderColor = "#fffdf8"
+): HTMLCanvasElement {
+  const bw = borderWidth ?? defaultBorderWidth(photoCanvas.width, photoCanvas.height);
+  const out = document.createElement("canvas");
+  out.width = photoCanvas.width + bw * 2;
+  out.height = photoCanvas.height + bw * 2;
+  const ctx = out.getContext("2d");
+  if (!ctx) return photoCanvas;
+
+  ctx.fillStyle = borderColor;
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(photoCanvas, bw, bw);
+  return out;
 }
 
 /**
  * Vẽ overlay khung tem đè lên video lúc đang xem (live preview). Chỉ mang
- * tính minh hoạ — vẽ các vòng tròn viền mỏng tại đúng vị trí lỗ sẽ bị khoét,
- * để người dùng thấy trước khung trước khi bấm chụp. Hình dạng THẬT của ảnh
- * ra được quyết định bởi applyStampMask(), không phải overlay này.
+ * tính minh hoạ: video không có viền trắng thật (viền chỉ được thêm sau khi
+ * chụp qua addStampBorder), nên overlay vẽ 1 khung mờ inset theo tỉ lệ viền
+ * để gợi ý vùng ảnh cuối cùng sẽ có viền trắng + răng cưa bao quanh khoảng
+ * đó. Hình dạng THẬT của ảnh ra được quyết định bởi addStampBorder() +
+ * applyStampMask(), không phải overlay này.
  */
 export function drawStampOverlay(
   ctx: CanvasRenderingContext2D,
@@ -50,7 +85,12 @@ export function drawStampOverlay(
   holeRadius: number
 ) {
   ctx.clearRect(0, 0, width, height);
-  const { nx, ny, stepX, stepY } = computeStampGrid(width, height, holeRadius);
+
+  // Khung gợi ý viền trắng sẽ xuất hiện quanh mép — inset nhẹ cho dễ hình dung.
+  const hintInset = Math.round(Math.min(width, height) * 0.035);
+  const innerW = width - hintInset * 2;
+  const innerH = height - hintInset * 2;
+  const { nx, ny, stepX, stepY } = computeStampGrid(innerW, innerH, holeRadius);
 
   ctx.save();
   ctx.strokeStyle = "rgba(255,255,255,0.85)";
@@ -59,33 +99,30 @@ export function drawStampOverlay(
 
   const ring = (cx: number, cy: number) => {
     ctx.beginPath();
-    ctx.arc(cx, cy, holeRadius, 0, Math.PI * 2);
+    ctx.arc(hintInset + cx, hintInset + cy, holeRadius, 0, Math.PI * 2);
     ctx.stroke();
   };
 
   for (let i = 0; i < nx; i++) {
     const cx = stepX * i + stepX / 2;
     ring(cx, 0);
-    ring(cx, height);
+    ring(cx, innerH);
   }
   for (let j = 0; j < ny; j++) {
     const cy = stepY * j + stepY / 2;
     ring(0, cy);
-    ring(width, cy);
+    ring(innerW, cy);
   }
 
-  // Viền ngoài mảnh để gợi cảm giác "khung giấy" bao quanh khung hình.
-  ctx.setLineDash([]);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, width - 2, height - 2);
   ctx.restore();
 }
 
 /**
- * Bake răng cưa THẬT vào ảnh: nhận vào 1 canvas đã chứa ảnh chụp (pixel thật),
- * trả về 1 canvas MỚI có đúng hình dạng răng cưa đó (alpha = 0 tại các lỗ
- * khoét). Dùng globalCompositeOperation "destination-out" để khoét alpha —
- * không quan trọng màu fill vì destination-out chỉ dùng alpha nguồn để trừ.
+ * Bake răng cưa THẬT vào ảnh: nhận vào 1 canvas (thường là ảnh đã qua
+ * addStampBorder, tức đã có viền trắng), trả về 1 canvas MỚI có đúng hình
+ * dạng răng cưa đó (alpha = 0 tại các lỗ khoét). Dùng
+ * globalCompositeOperation "destination-out" để khoét alpha — không quan
+ * trọng màu fill vì destination-out chỉ dùng alpha nguồn để trừ.
  *
  * Xuất ra bằng canvas.toBlob("image/png", ...) ở nơi gọi — BẮT BUỘC PNG để
  * giữ vùng trong suốt tại các lỗ khoét (JPEG không có alpha).
@@ -126,4 +163,16 @@ export function applyStampMask(sourceCanvas: HTMLCanvasElement, holeRadius?: num
 
   ctx.globalCompositeOperation = "source-over";
   return out;
+}
+
+/**
+ * Tiện ích gộp 2 bước: bọc viền trắng + đục răng cưa, dùng trong
+ * InstantCapture.tsx ngay sau khi chụp xong 1 khung hình.
+ */
+export function buildStampPhoto(
+  photoCanvas: HTMLCanvasElement,
+  options?: { borderWidth?: number; holeRadius?: number; borderColor?: string }
+): HTMLCanvasElement {
+  const bordered = addStampBorder(photoCanvas, options?.borderWidth, options?.borderColor);
+  return applyStampMask(bordered, options?.holeRadius ?? defaultHoleRadius(bordered.width, bordered.height));
 }
