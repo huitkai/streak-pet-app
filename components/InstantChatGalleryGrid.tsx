@@ -70,7 +70,7 @@ export default function InstantChatGalleryGrid({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {shots.map((shot) => {
             const isSelected = selected.has(shot.id);
             return (
@@ -89,6 +89,8 @@ export default function InstantChatGalleryGrid({
                   <img
                     src={shot.url}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className={`h-full w-full object-cover transition ${isSelected ? "" : "opacity-40"}`}
                   />
                 </button>

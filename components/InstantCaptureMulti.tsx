@@ -23,7 +23,9 @@ import { XIcon, CameraFlipIcon, ChevronRightIcon, ImageIcon } from "@/components
 import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stamp-frame";
 
 const OUTPUT_ASPECT = 4 / 5;
-const SAFETY_MAX_OUTPUT_WIDTH = 4096;
+/** Trần độ phân giải — xem giải thích chi tiết trong InstantCapture.tsx.
+ * Giữ đồng bộ 2 nơi để ảnh chụp từ 2 luồng nặng/nhẹ như nhau. */
+const SAFETY_MAX_OUTPUT_WIDTH = 1440;
 
 export interface CapturedShot {
   id: string;

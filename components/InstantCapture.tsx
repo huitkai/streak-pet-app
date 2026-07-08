@@ -14,12 +14,15 @@ import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stam
 /** Tỉ lệ khung ảnh xuất ra — dọc 4:5 giống khung ảnh Locket/Instagram, không
  * lấy nguyên khung video (thường 16:9) để tránh ảnh quá dẹt. */
 const OUTPUT_ASPECT = 4 / 5;
-/** Không hạ độ phân giải xuống mức "đủ dùng cho bong bóng chat" nữa — ảnh
- * xuất ra giữ ĐÚNG độ nét camera thật đo được (đã detect + áp max lúc mở
- * camera, xem useEffect phía trên). Số này chỉ là 1 trần AN TOÀN cực cao,
- * đề phòng thiết bị nào đó báo capability sai/quá khổ khiến canvas tạo ảnh
- * bị lỗi — trong điều kiện bình thường sẽ không bao giờ chạm tới. */
-const SAFETY_MAX_OUTPUT_WIDTH = 4096;
+/** Trần độ phân giải ảnh xuất ra. 1440px đã dư nét cho màn hình điện thoại
+ * (kể cả retina) và cho khung xem full-screen trong app — chụp ở độ phân
+ * giải camera thật (có thể 3000-4000px+) chỉ khiến file PNG lossless nặng
+ * 15-20MB/ảnh, gây giật khi encode lúc chụp, giật khi tải/scroll trong danh
+ * sách tin nhắn, và giật khi hiện lưới nhiều ảnh cùng lúc — không tăng thêm
+ * chất lượng nhìn thấy được vì màn hình hiển thị không đủ điểm ảnh để tận
+ * dụng. Hạ trần xuống mức này giảm dung lượng file khoảng 5-8 lần mà ảnh vẫn
+ * nét, mượt hơn hẳn ở cả 3 khâu trên. */
+const SAFETY_MAX_OUTPUT_WIDTH = 1440;
 
 export default function InstantCapture({
   onCapture,

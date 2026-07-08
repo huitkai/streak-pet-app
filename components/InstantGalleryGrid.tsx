@@ -76,7 +76,7 @@ export default function InstantGalleryGrid({
         {shots.length === 0 ? (
           <p className="mt-10 text-center text-sm text-white/50">Chưa có ảnh nào — bấm chụp thêm để bắt đầu.</p>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {shots.map((shot, i) => (
               <div
                 key={shot.id}
@@ -90,7 +90,13 @@ export default function InstantGalleryGrid({
                   className="absolute inset-0 active:scale-95 transition"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={shot.url} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={shot.url}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
                 </button>
               </div>
             ))}
