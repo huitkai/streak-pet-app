@@ -7,48 +7,71 @@
  *     tem thật luôn nhìn "sạch" dù răng cưa là các vết khoét: chúng cắt vào
  *     giấy trơn màu đều, không cắt trực tiếp lên chi tiết ảnh.
  *  2. Mặt nạ răng cưa (applyStampMask) khoét các lỗ bán nguyệt đều nhau dọc
- *     4 cạnh của LỚP VIỀN đó.
+ *     toàn bộ chu vi của LỚP VIỀN đó.
  *
- * Cách dựng lỗ: chia mỗi cạnh thành N đoạn bằng nhau, tại tâm mỗi đoạn "đục"
- * một hình tròn bán kính `holeRadius` nằm đúng trên đường biên (một nửa hình
- * tròn nằm trong, một nửa nằm ngoài) — phần nằm trong bị khoét đi.
+ * QUAN TRỌNG — vì sao dùng "chu vi liên tục" thay vì tính riêng từng cạnh:
+ * Nếu tính số lỗ/khoảng cách RIÊNG cho mỗi cạnh (trên/dưới/trái/phải độc
+ * lập), 2 cạnh gặp nhau ở góc sẽ không khớp pha với nhau — mỗi cạnh có lỗ
+ * đầu tiên cách góc 1 khoảng khác nhau, tạo ra 1 khúc thừa/lệch nhìn thấy rõ
+ * ngay tại góc. Cách đúng: coi toàn bộ 4 cạnh là 1 vòng chu vi duy nhất,
+ * chia đều số lỗ dọc theo chiều dài chu vi đó rồi "đi bộ" 1 vòng để đặt lỗ —
+ * đảm bảo mật độ lỗ liền mạch qua góc, không bị thừa/thiếu ở bất kỳ đâu.
  *
- * Cùng 1 hàm computeStampGrid() được dùng cho cả overlay preview (lúc đang
- * xem camera, không cần chính xác 100%) và applyStampMask() (bake thật vào
- * canvas cuối cùng) để 2 nơi luôn khớp nhau về mật độ răng cưa.
+ * Cùng 1 hàm computeStampPerimeterPoints() được dùng cho cả overlay preview
+ * (lúc đang xem camera, không cần chính xác 100%) và applyStampMask() (bake
+ * thật vào canvas cuối cùng) để 2 nơi luôn khớp nhau về mật độ răng cưa.
  */
 
-export interface StampGrid {
-  nx: number;
-  ny: number;
-  stepX: number;
-  stepY: number;
+export interface Point {
+  x: number;
+  y: number;
 }
 
 /**
- * Số răng cưa tối thiểu 3 mỗi cạnh. `gap` là khoảng hở giữa tâm 2 lỗ liền kề
- * TRỪ ĐI đúng 2*holeRadius — tức phần "thịt" giấy còn lại giữa 2 lỗ.
+ * Tính vị trí các tâm lỗ dọc theo TOÀN BỘ chu vi hình chữ nhật (width x
+ * height), đi 1 vòng liên tục theo chiều kim đồng hồ bắt đầu từ góc trên-trái
+ * (điểm (0,0)) → cạnh trên → cạnh phải → cạnh dưới → cạnh trái → về lại góc
+ * ban đầu. Nhờ đi liên tục nên KHÔNG có chuyện lệch pha giữa 2 cạnh tại góc.
  *
- * QUAN TRỌNG: nếu gap = 0 (2 lỗ đặt tiếp xúc nhau, tâm cách nhau đúng
- * 2*holeRadius) thì điểm chạm giữa 2 hình tròn về mặt hình học là 1 đỉnh
- * nhọn góc 0° — đây chính là nguyên nhân răng cưa nhìn nhọn/sắc thay vì các
- * u tròn mềm mại như tem thật. Phải luôn chừa 1 khoảng hở dương để giữa 2
- * lỗ còn lại 1 dải giấy có bề rộng thật, tạo đỉnh tròn/tù thay vì đỉnh nhọn.
+ * `gap` là khoảng hở giữa mép 2 lỗ liền kề (KHÔNG phải khoảng cách tâm).
+ * QUAN TRỌNG: nếu gap = 0 (2 lỗ đặt tiếp xúc nhau) thì điểm chạm giữa 2 hình
+ * tròn về mặt hình học là 1 đỉnh nhọn góc 0° — đây là nguyên nhân răng cưa
+ * nhìn nhọn/sắc thay vì các u tròn mềm mại như tem thật. Phải luôn chừa 1
+ * khoảng hở dương để giữa 2 lỗ còn lại 1 dải giấy có bề rộng thật.
  */
-function holeCountFor(length: number, holeRadius: number, gap: number): number {
-  const period = holeRadius * 2 + gap;
-  return Math.max(3, Math.round(length / period));
-}
-
-export function computeStampGrid(
+export function computeStampPerimeterPoints(
   width: number,
   height: number,
   holeRadius: number,
   gap: number = holeRadius * 0.6
-): StampGrid {
-  const nx = holeCountFor(width, holeRadius, gap);
-  const ny = holeCountFor(height, holeRadius, gap);
-  return { nx, ny, stepX: width / nx, stepY: height / ny };
+): Point[] {
+  const perimeter = 2 * (width + height);
+  const period = holeRadius * 2 + gap;
+  // Tối thiểu 12 lỗ quanh toàn bộ chu vi (~3 lỗ/cạnh cho ảnh vuông) để không
+  // bị nhìn giống hình chữ nhật trơn.
+  const count = Math.max(12, Math.round(perimeter / period));
+  const actualPeriod = perimeter / count; // chia lại cho khớp đúng 1 vòng, không dư
+
+  const pointAt = (s: number): Point => {
+    // Đi theo chiều kim đồng hồ: trên (trái->phải), phải (trên->dưới),
+    // dưới (phải->trái), trái (dưới->trên).
+    if (s < width) return { x: s, y: 0 };
+    s -= width;
+    if (s < height) return { x: width, y: s };
+    s -= height;
+    if (s < width) return { x: width - s, y: height };
+    s -= width;
+    return { x: 0, y: height - s };
+  };
+
+  const points: Point[] = [];
+  // Lệch pha nửa chu kỳ để lỗ không nằm đúng lên góc (tránh 1 lỗ bị "cắt đôi"
+  // bởi góc vuông, nhìn không đẹp) — thay vào đó góc nằm giữa 2 lỗ.
+  const phaseOffset = actualPeriod / 2;
+  for (let i = 0; i < count; i++) {
+    points.push(pointAt((phaseOffset + i * actualPeriod) % perimeter));
+  }
+  return points;
 }
 
 /** Bán kính lỗ mặc định — tỉ lệ theo cạnh ngắn của khung (đã tính cả viền
@@ -108,28 +131,17 @@ export function drawStampOverlay(
   const hintInset = Math.round(Math.min(width, height) * 0.035);
   const innerW = width - hintInset * 2;
   const innerH = height - hintInset * 2;
-  const { nx, ny, stepX, stepY } = computeStampGrid(innerW, innerH, holeRadius);
+  const points = computeStampPerimeterPoints(innerW, innerH, holeRadius);
 
   ctx.save();
   ctx.strokeStyle = "rgba(255,255,255,0.85)";
   ctx.lineWidth = 1.5;
   ctx.setLineDash([2, 2]);
 
-  const ring = (cx: number, cy: number) => {
+  for (const p of points) {
     ctx.beginPath();
-    ctx.arc(hintInset + cx, hintInset + cy, holeRadius, 0, Math.PI * 2);
+    ctx.arc(hintInset + p.x, hintInset + p.y, holeRadius, 0, Math.PI * 2);
     ctx.stroke();
-  };
-
-  for (let i = 0; i < nx; i++) {
-    const cx = stepX * i + stepX / 2;
-    ring(cx, 0);
-    ring(cx, innerH);
-  }
-  for (let j = 0; j < ny; j++) {
-    const cy = stepY * j + stepY / 2;
-    ring(0, cy);
-    ring(innerW, cy);
   }
 
   ctx.restore();
@@ -158,25 +170,14 @@ export function applyStampMask(sourceCanvas: HTMLCanvasElement, holeRadius?: num
 
   ctx.drawImage(sourceCanvas, 0, 0, width, height);
 
-  const { nx, ny, stepX, stepY } = computeStampGrid(width, height, r);
+  const points = computeStampPerimeterPoints(width, height, r);
   ctx.globalCompositeOperation = "destination-out";
   ctx.fillStyle = "#000";
 
-  const punch = (cx: number, cy: number) => {
+  for (const p of points) {
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fill();
-  };
-
-  for (let i = 0; i < nx; i++) {
-    const cx = stepX * i + stepX / 2;
-    punch(cx, 0);
-    punch(cx, height);
-  }
-  for (let j = 0; j < ny; j++) {
-    const cy = stepY * j + stepY / 2;
-    punch(0, cy);
-    punch(width, cy);
   }
 
   ctx.globalCompositeOperation = "source-over";
