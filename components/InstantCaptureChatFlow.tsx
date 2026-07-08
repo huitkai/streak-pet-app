@@ -22,7 +22,7 @@
 
 import { useState } from "react";
 import InstantCaptureMulti, { type CapturedShot } from "@/components/InstantCaptureMulti";
-import InstantGalleryGrid from "@/components/InstantGalleryGrid";
+import InstantGalleryGrid from "@/components/InstantChatGalleryGrid";
 
 type Step = "camera" | "gallery";
 
