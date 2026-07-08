@@ -110,6 +110,46 @@ function reactionsFromRows(rows: ReactionRow[]): ReactionMap {
   return map;
 }
 
+/**
+ * Bọc quanh 1 <img> tin nhắn (ảnh thường / chụp nhanh / GIF): trong lúc ảnh
+ * còn đang tải từ mạng, hiện 1 khung skeleton shimmer thay vì để trình duyệt
+ * tự vẽ ảnh dần từng dải pixel (progressive render trông giật/xấu, đặc biệt
+ * rõ với ảnh nét cao trên mạng chậm). Khi ảnh tải xong (onLoad) mới fade-in
+ * mượt — cảm giác "khung đã sẵn sàng, ảnh trượt vào" thay vì "ảnh hiện ra từ
+ * từ". Ảnh đã có sẵn trong cache trình duyệt (vd ảnh cục bộ vừa chụp) thì
+ * onLoad bắn gần như ngay lập tức nên skeleton chỉ thoáng qua, không gây khó chịu.
+ */
+function MessageImage({
+  src,
+  alt,
+  aspectRatio,
+  className = "",
+  imgClassName = "",
+}: {
+  src: string;
+  alt: string;
+  aspectRatio?: string;
+  className?: string;
+  imgClassName?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={`relative overflow-hidden ${className}`} style={aspectRatio ? { aspectRatio } : undefined}>
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        style={aspectRatio ? { aspectRatio } : undefined}
+        className={`${imgClassName} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
+  );
+}
+
 export default function ChatBox({
   coupleId,
   userId,
@@ -412,10 +452,21 @@ export default function ChatBox({
     shouldAutoScroll.current = false;
     const prevScrollHeight = el.scrollHeight;
 
-    const older = await fetchOlderMessages(coupleId, oldest.created_at, PAGE_SIZE);
+    const { messages: older, reactions: olderReactions, hiddenIds: olderHiddenIds } = await fetchOlderMessages(
+      coupleId,
+      userId,
+      oldest.created_at,
+      PAGE_SIZE
+    );
     if (older.length < PAGE_SIZE) setHasMoreOlder(false);
     if (older.length > 0) {
       setMessages((prev) => [...(older as MessageRow[]), ...prev]);
+      if (olderReactions.length > 0) {
+        setReactions((prev) => ({ ...prev, ...reactionsFromRows(olderReactions as ReactionRow[]) }));
+      }
+      if (olderHiddenIds.length > 0) {
+        setHiddenIds((prev) => new Set([...prev, ...olderHiddenIds]));
+      }
       // giữ nguyên vị trí nhìn thấy được sau khi chèn tin cũ vào đầu danh sách
       requestAnimationFrame(() => {
         if (el) el.scrollTop = el.scrollHeight - prevScrollHeight;
@@ -607,18 +658,37 @@ export default function ChatBox({
   }
 
   /**
-   * Nhận PNG đã có sẵn răng cưa từ <InstantCapture> (xem
+   * Nhận PNG lossless đã có sẵn răng cưa từ <InstantCapture> (xem
    * components/InstantCapture.tsx + lib/stamp-frame.ts) -> upload lên cùng
    * bucket "chat-images" -> gửi bằng sendStampPhoto (khác sendImage ở cách
    * mã hoá nội dung để client render không viền/không bo góc).
+   *
+   * QUAN TRỌNG: không hạ chất lượng/độ phân giải ảnh để đổi lấy tốc độ. Thay
+   * vào đó, tin nhắn được hiện ra NGAY LẬP TỨC bằng blob URL cục bộ (ảnh vừa
+   * chụp, hiển thị tức thì không cần chờ mạng) trong khi việc upload file PNG
+   * gốc (giữ nguyên chất lượng) chạy NGẦM phía sau — người dùng thấy ảnh ngay
+   * dù mạng chậm, chỉ có tick "đang gửi" (pending) chuyển thành "đã gửi" trễ
+   * hơn 1 chút khi upload xong.
    */
   async function handleStampCapture(blob: Blob, width: number, height: number) {
     setInstantCaptureOpen(false);
     shouldAutoScroll.current = true;
     const replyToId = replyingTo?.id ?? null;
     setReplyingTo(null);
+
     const localUrl = URL.createObjectURL(blob);
-    setUploadPreview(localUrl);
+    const optimisticId = tempId();
+    const optimistic: MessageRow = {
+      id: optimisticId,
+      couple_id: coupleId,
+      sender_id: userId,
+      content: encodeStampPhoto(localUrl, width, height),
+      reply_to_id: replyToId,
+      created_at: new Date().toISOString(),
+      pending: true,
+    };
+    // Hiện ngay bằng ảnh cục bộ — không chờ upload xong mới thấy gì.
+    setMessages((prev) => [...prev, optimistic]);
 
     try {
       const supabase = createClient();
@@ -632,29 +702,19 @@ export default function ChatBox({
       const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
       const finalUrl = pub.publicUrl;
 
-      const optimistic: MessageRow = {
-        id: tempId(),
-        couple_id: coupleId,
-        sender_id: userId,
-        content: encodeStampPhoto(finalUrl, width, height),
-        reply_to_id: replyToId,
-        created_at: new Date().toISOString(),
-        pending: true,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      setUploadPreview(null);
-      URL.revokeObjectURL(localUrl);
-
       const res = await sendStampPhoto(coupleId, finalUrl, width, height, replyToId);
       setMessages((prev) => {
         if (res?.message) {
-          return prev.map((m) => (m.id === optimistic.id ? { ...res.message, pending: false } : m));
+          return prev.map((m) => (m.id === optimisticId ? { ...res.message, pending: false } : m));
         }
-        return prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m));
+        return prev.map((m) => (m.id === optimisticId ? { ...m, pending: false, failed: true } : m));
       });
-    } catch (err) {
       URL.revokeObjectURL(localUrl);
-      setUploadPreview(null);
+    } catch (err) {
+      // Giữ nguyên bubble với ảnh cục bộ, chỉ đánh dấu gửi thất bại — không
+      // revoke localUrl ở đây vì bubble vẫn đang hiển thị ảnh đó cho tới khi
+      // người dùng thử gửi lại hoặc xoá tin.
+      setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, pending: false, failed: true } : m)));
       setUploadError(err instanceof Error ? err.message : "Gửi ảnh Chụp nhanh thất bại.");
     }
   }
@@ -1091,12 +1151,12 @@ export default function ChatBox({
                               mine ? "rounded-br-md" : "rounded-bl-md"
                             } ${m.pending ? "opacity-70" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
                           >
-                            <img
+                            <MessageImage
                               src={decoded.url}
                               alt="Ảnh đã gửi"
-                              loading="lazy"
-                              style={decoded.width && decoded.height ? { aspectRatio: `${decoded.width} / ${decoded.height}` } : undefined}
-                              className="max-h-72 w-full bg-black/5 object-cover"
+                              aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
+                              className="max-h-72 w-full bg-black/5"
+                              imgClassName="max-h-72 w-full object-cover"
                             />
                             {m.pending && (
                               <span className="absolute inset-0 flex items-center justify-center bg-black/25">
@@ -1126,16 +1186,14 @@ export default function ChatBox({
                           >
                             {/* Không rounded/overflow-hidden/nền: hình dạng răng cưa đã
                                nằm sẵn trong file PNG (vùng trong suốt tại các lỗ khoét),
-                               bọc thêm khung ở đây sẽ đè mất viền tem đã bake. */}
-                            <img
+                               bọc thêm khung ở đây sẽ đè mất viền tem đã bake. Vì vậy
+                               skeleton loading dùng nền trong suốt, không phải khối đặc. */}
+                            <MessageImage
                               src={decoded.url}
                               alt="Chụp nhanh"
-                              loading="lazy"
-                              style={{
-                                aspectRatio: decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined,
-                                filter: "drop-shadow(0 3px 6px rgb(0 0 0 / 0.25))",
-                              }}
-                              className="w-full object-contain"
+                              aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : "4 / 5"}
+                              className="w-full"
+                              imgClassName="w-full object-contain [filter:drop-shadow(0_3px_6px_rgb(0_0_0_/_0.25))]"
                             />
                             {m.pending && (
                               <span className="absolute inset-0 flex items-center justify-center">
@@ -1163,12 +1221,12 @@ export default function ChatBox({
                               mine ? "rounded-br-md" : "rounded-bl-md"
                             } ${m.pending ? "opacity-70" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
                           >
-                            <img
+                            <MessageImage
                               src={decoded.url}
                               alt="GIF đã gửi"
-                              loading="lazy"
-                              style={decoded.width && decoded.height ? { aspectRatio: `${decoded.width} / ${decoded.height}` } : undefined}
-                              className="max-h-72 w-full bg-black/5 object-cover"
+                              aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
+                              className="max-h-72 w-full bg-black/5"
+                              imgClassName="max-h-72 w-full object-cover"
                             />
                             <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white">
                               GIF

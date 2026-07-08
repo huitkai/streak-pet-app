@@ -14,10 +14,12 @@ import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stam
 /** Tỉ lệ khung ảnh xuất ra — dọc 4:5 giống khung ảnh Locket/Instagram, không
  * lấy nguyên khung video (thường 16:9) để tránh ảnh quá dẹt. */
 const OUTPUT_ASPECT = 4 / 5;
-/** Chặn trần độ rộng ảnh xuất ra — vẫn tôn trọng độ phân giải camera thật đo
- * được, nhưng không để PNG (bắt buộc PNG để giữ vùng trong suốt răng cưa)
- * phình quá to trên các máy có camera 4K+. */
-const MAX_OUTPUT_WIDTH = 1600;
+/** Không hạ độ phân giải xuống mức "đủ dùng cho bong bóng chat" nữa — ảnh
+ * xuất ra giữ ĐÚNG độ nét camera thật đo được (đã detect + áp max lúc mở
+ * camera, xem useEffect phía trên). Số này chỉ là 1 trần AN TOÀN cực cao,
+ * đề phòng thiết bị nào đó báo capability sai/quá khổ khiến canvas tạo ảnh
+ * bị lỗi — trong điều kiện bình thường sẽ không bao giờ chạm tới. */
+const SAFETY_MAX_OUTPUT_WIDTH = 4096;
 
 export default function InstantCapture({
   onCapture,
@@ -151,11 +153,9 @@ export default function InstantCapture({
 
     // sw ở đây là bề rộng vùng crop THẬT lấy từ khung hình camera (đã theo
     // đúng tỉ lệ OUTPUT_ASPECT) — dùng chính giá trị này để suy ra độ phân
-    // giải ảnh xuất ra, thay vì 1 hằng số cố định, để tận dụng đúng độ nét
-    // camera thật sự cung cấp (đã detect + áp max ở bước mở camera).
-    // Vẫn chặn trần bằng MAX_OUTPUT_WIDTH để PNG không phình quá to trên máy
-    // có camera độ phân giải rất cao.
-    const outputWidth = Math.min(MAX_OUTPUT_WIDTH, Math.round(sw));
+    // giải ảnh xuất ra, giữ ĐÚNG độ nét camera thật cung cấp, không hạ thấp
+    // xuống 1 mức "vừa đủ" nào cả.
+    const outputWidth = Math.min(SAFETY_MAX_OUTPUT_WIDTH, Math.round(sw));
     const outputHeight = Math.round(outputWidth / OUTPUT_ASPECT);
 
     const shot = document.createElement("canvas");
@@ -176,12 +176,16 @@ export default function InstantCapture({
     setFlashing(true);
     window.setTimeout(() => setFlashing(false), 180);
 
-    stamped.toBlob(
-      (blob) => {
-        if (blob) onCapture(blob, stamped.width, stamped.height);
-      },
-      "image/png" // bắt buộc PNG để giữ vùng trong suốt tại các lỗ răng cưa
-    );
+    // PNG là định dạng nén KHÔNG MẤT DỮ LIỆU (lossless) — giữ nguyên 100%
+    // chất lượng ảnh gốc, đồng thời có alpha channel cho vùng trong suốt tại
+    // các lỗ răng cưa. WebP quality<1 tuy nhẹ hơn nhưng vẫn là nén có mất dữ
+    // liệu (lossy), nên không dùng ở đây theo đúng yêu cầu giữ nguyên chất
+    // lượng ảnh. Phần "cảm giác chậm lúc chụp" được xử lý ở tầng khác —
+    // xem handleStampCapture trong ChatBox.tsx (hiện tin nhắn ngay lập tức,
+    // upload chạy nền) — không đánh đổi bằng chất lượng ảnh.
+    stamped.toBlob((blob) => {
+      if (blob) onCapture(blob, stamped.width, stamped.height);
+    }, "image/png");
   }
 
   return (

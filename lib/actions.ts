@@ -575,8 +575,12 @@ export async function searchMessages(coupleId: string, query: string) {
   return data;
 }
 
-/** Tải thêm tin nhắn CŨ HƠN mốc `beforeIso` — dùng cho infinite scroll lên trên. */
-export async function fetchOlderMessages(coupleId: string, beforeIso: string, limit = 40) {
+/** Tải thêm tin nhắn CŨ HƠN mốc `beforeIso` — dùng cho infinite scroll lên trên.
+ * Kèm theo reactions + trạng thái ẩn CỦA ĐÚNG LÔ tin nhắn này (không phải toàn
+ * bộ lịch sử) — vì trang chat giờ chỉ tải reactions/hidden cho các tin đang
+ * hiển thị (xem ghi chú trong app/chat/page.tsx), nên mỗi lần kéo thêm tin cũ
+ * cũng phải tự mang theo phần dữ liệu tương ứng của riêng lô đó. */
+export async function fetchOlderMessages(coupleId: string, userId: string, beforeIso: string, limit = 40) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("messages")
@@ -585,9 +589,24 @@ export async function fetchOlderMessages(coupleId: string, beforeIso: string, li
     .lt("created_at", beforeIso)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) return [];
-  return (data ?? []).reverse();
+  if (error) return { messages: [], reactions: [], hiddenIds: [] as string[] };
+
+  const messages = (data ?? []).reverse();
+  const messageIds = messages.map((m) => m.id);
+  if (messageIds.length === 0) return { messages, reactions: [], hiddenIds: [] as string[] };
+
+  const [{ data: reactions }, { data: hidden }] = await Promise.all([
+    supabase.from("message_reactions").select("*").in("message_id", messageIds),
+    supabase.from("message_hidden").select("message_id").eq("user_id", userId).in("message_id", messageIds),
+  ]);
+
+  return {
+    messages,
+    reactions: reactions ?? [],
+    hiddenIds: (hidden ?? []).map((h) => h.message_id) as string[],
+  };
 }
+
 
 /** Tải 1 khoảng tin nhắn XUNG QUANH 1 mốc thời gian — dùng khi bấm vào kết
  * quả tìm kiếm để "nhảy" tới đúng tin đó kèm ngữ cảnh xung quanh. */

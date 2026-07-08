@@ -40,9 +40,7 @@ export default async function ChatPage() {
     { data: profiles },
     { data: reads },
     { data: deliveries },
-    { data: reactions },
     { data: pins },
-    { data: hidden },
   ] = await Promise.all([
     supabase.from("streaks").select("*").eq("couple_id", couple.id).single(),
     supabase.from("pets").select("*").eq("couple_id", couple.id).single(),
@@ -53,16 +51,36 @@ export default async function ChatPage() {
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE),
     supabase.from("profiles").select("*").in("id", [user.id, partnerId].filter(Boolean) as string[]),
+    // message_reads/message_deliveries: mỗi bảng chỉ tối đa 2 dòng/couple
+    // (1 mốc thời gian/user, không phải 1 dòng/tin nhắn) nên KHÔNG phình
+    // theo lịch sử chat — an toàn khi query theo couple_id không giới hạn.
     supabase.from("message_reads").select("*").eq("couple_id", couple.id),
     supabase.from("message_deliveries").select("*").eq("couple_id", couple.id),
-    supabase.from("message_reactions").select("*").eq("couple_id", couple.id),
+    // pinned_messages: số tin ghim thực tế luôn nhỏ (người dùng chỉ ghim vài
+    // tin quan trọng) nên giữ query theo couple_id không giới hạn cũng an toàn.
     supabase.from("pinned_messages").select("*").eq("couple_id", couple.id),
-    supabase.from("message_hidden").select("message_id").eq("user_id", user.id),
   ]);
 
   if (!streak || !pet) redirect("/couple");
 
   const messages = [...(latestMessagesDesc ?? [])].reverse();
+  const messageIds = messages.map((m) => m.id);
+
+  // message_reactions và message_hidden thì NGƯỢC LẠI — mỗi tin nhắn có thể
+  // có nhiều dòng cảm xúc, và mỗi tin user ẩn cũng là 1 dòng riêng, nên 2
+  // bảng này phình tuyến tính theo TOÀN BỘ lịch sử chat. Trước đây 2 câu này
+  // filter theo couple_id/user_id (không giới hạn số tin nhắn) nên càng chat
+  // nhiều theo thời gian, mỗi lần mở khung chat càng phải tải về càng nhiều
+  // dữ liệu không dùng tới (vì màn hình chỉ hiển thị PAGE_SIZE tin mới nhất)
+  // — đây chính là nguyên nhân "vào tin nhắn load lâu" càng dùng lâu càng
+  // nặng. Sửa lại: chỉ lấy reactions/hidden của đúng các tin nhắn đang tải.
+  const [{ data: reactions }, { data: hidden }] = messageIds.length
+    ? await Promise.all([
+        supabase.from("message_reactions").select("*").in("message_id", messageIds),
+        supabase.from("message_hidden").select("message_id").eq("user_id", user.id).in("message_id", messageIds),
+      ])
+    : [{ data: [] as never[] }, { data: [] as never[] }];
+
   const species = (couple.pet_species ?? "cat") as PetSpecies;
   const accessory = (couple.pet_accessory ?? "none") as PetAccessoryValue;
   const myProfile = profiles?.find((p) => p.id === user.id) ?? null;
