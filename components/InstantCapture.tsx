@@ -14,8 +14,10 @@ import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stam
 /** Tỉ lệ khung ảnh xuất ra — dọc 4:5 giống khung ảnh Locket/Instagram, không
  * lấy nguyên khung video (thường 16:9) để tránh ảnh quá dẹt. */
 const OUTPUT_ASPECT = 4 / 5;
-const OUTPUT_WIDTH = 640;
-const OUTPUT_HEIGHT = Math.round(OUTPUT_WIDTH / OUTPUT_ASPECT);
+/** Chặn trần độ rộng ảnh xuất ra — vẫn tôn trọng độ phân giải camera thật đo
+ * được, nhưng không để PNG (bắt buộc PNG để giữ vùng trong suốt răng cưa)
+ * phình quá to trên các máy có camera 4K+. */
+const MAX_OUTPUT_WIDTH = 1600;
 
 export default function InstantCapture({
   onCapture,
@@ -40,10 +42,47 @@ export default function InstantCapture({
       setError(null);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       try {
+        // Bước 1: mở camera trước với ràng buộc "ideal" tương đối cao chỉ để
+        // có 1 track hợp lệ — chưa chắc đã là độ phân giải cao nhất máy hỗ
+        // trợ, vì browser có thể chọn preset thấp hơn ideal nếu muốn.
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing },
+          video: {
+            facingMode: facing,
+            width: { ideal: 1920 },
+            height: { ideal: 1920 },
+            aspectRatio: { ideal: OUTPUT_ASPECT },
+          },
           audio: false,
         });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        // Bước 2: hỏi thẳng track xem CAMERA THẬT SỰ hỗ trợ độ phân giải tối
+        // đa bao nhiêu (getCapabilities().width/height.max), rồi áp lại đúng
+        // mức max đó bằng applyConstraints — đây là cách chắc chắn nhất để
+        // lấy ảnh nét nhất máy cho phép, thay vì đoán 1 con số cố định.
+        // Không phải browser/thiết bị nào cũng hỗ trợ getCapabilities (Safari
+        // cũ, một số Android WebView), nên luôn bọc try/catch và coi đây là
+        // bước "cố gắng thêm", không phải bước bắt buộc.
+        const [track] = stream.getVideoTracks();
+        if (track && typeof track.getCapabilities === "function") {
+          try {
+            const caps = track.getCapabilities();
+            const maxW = caps.width?.max;
+            const maxH = caps.height?.max;
+            if (maxW && maxH) {
+              await track.applyConstraints({
+                width: { ideal: maxW },
+                height: { ideal: maxH },
+              });
+            }
+          } catch {
+            // Thiết bị không cho áp constraint mới — vẫn dùng stream ban đầu.
+          }
+        }
+
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -110,18 +149,27 @@ export default function InstantCapture({
       sy = (vh - sh) / 2;
     }
 
+    // sw ở đây là bề rộng vùng crop THẬT lấy từ khung hình camera (đã theo
+    // đúng tỉ lệ OUTPUT_ASPECT) — dùng chính giá trị này để suy ra độ phân
+    // giải ảnh xuất ra, thay vì 1 hằng số cố định, để tận dụng đúng độ nét
+    // camera thật sự cung cấp (đã detect + áp max ở bước mở camera).
+    // Vẫn chặn trần bằng MAX_OUTPUT_WIDTH để PNG không phình quá to trên máy
+    // có camera độ phân giải rất cao.
+    const outputWidth = Math.min(MAX_OUTPUT_WIDTH, Math.round(sw));
+    const outputHeight = Math.round(outputWidth / OUTPUT_ASPECT);
+
     const shot = document.createElement("canvas");
-    shot.width = OUTPUT_WIDTH;
-    shot.height = OUTPUT_HEIGHT;
+    shot.width = outputWidth;
+    shot.height = outputHeight;
     const ctx = shot.getContext("2d");
     if (!ctx) return;
 
     // Camera trước thì lật ngang cho giống soi gương (đúng cảm giác selfie).
     if (facing === "user") {
-      ctx.translate(OUTPUT_WIDTH, 0);
+      ctx.translate(outputWidth, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, outputWidth, outputHeight);
 
     const stamped = buildStampPhoto(shot);
 

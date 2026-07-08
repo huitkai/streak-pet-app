@@ -45,31 +45,33 @@ export function computeStampPerimeterPoints(
   holeRadius: number,
   gap: number = holeRadius * 0.6
 ): Point[] {
-  const perimeter = 2 * (width + height);
   const period = holeRadius * 2 + gap;
-  // Tối thiểu 12 lỗ quanh toàn bộ chu vi (~3 lỗ/cạnh cho ảnh vuông) để không
-  // bị nhìn giống hình chữ nhật trơn.
-  const count = Math.max(12, Math.round(perimeter / period));
-  const actualPeriod = perimeter / count; // chia lại cho khớp đúng 1 vòng, không dư
 
-  const pointAt = (s: number): Point => {
-    // Đi theo chiều kim đồng hồ: trên (trái->phải), phải (trên->dưới),
-    // dưới (phải->trái), trái (dưới->trên).
-    if (s < width) return { x: s, y: 0 };
-    s -= width;
-    if (s < height) return { x: width, y: s };
-    s -= height;
-    if (s < width) return { x: width - s, y: height };
-    s -= width;
-    return { x: 0, y: height - s };
-  };
+  // QUAN TRỌNG: neo 1 lỗ đúng vào MỖI GÓC thay vì lệch pha nửa chu kỳ để
+  // "né" góc như trước. Lý do: khi đi theo chu vi bằng khoảng cách cung
+  // (arc-length) rồi rẽ 90° ở góc, khoảng cách ĐƯỜNG THẲNG thực tế giữa 2 lỗ
+  // liền kề tại góc ngắn hơn hẳn khoảng cách cung — khiến các lỗ quanh góc
+  // nhìn sát/dư hơn các lỗ giữa cạnh thẳng dù "cách đều" theo chu vi.
+  // Neo lỗ vào góc + chia đều riêng cho từng cạnh (từ góc này sang góc kia)
+  // đảm bảo khoảng cách hình học thật giữa mọi lỗ liền kề bằng nhau, kể cả
+  // 2 lỗ nằm 2 bên 1 góc.
+  const edges: Array<{ length: number; from: Point; dir: Point }> = [
+    { length: width, from: { x: 0, y: 0 }, dir: { x: 1, y: 0 } }, // trên
+    { length: height, from: { x: width, y: 0 }, dir: { x: 0, y: 1 } }, // phải
+    { length: width, from: { x: width, y: height }, dir: { x: -1, y: 0 } }, // dưới
+    { length: height, from: { x: 0, y: height }, dir: { x: 0, y: -1 } }, // trái
+  ];
 
   const points: Point[] = [];
-  // Lệch pha nửa chu kỳ để lỗ không nằm đúng lên góc (tránh 1 lỗ bị "cắt đôi"
-  // bởi góc vuông, nhìn không đẹp) — thay vào đó góc nằm giữa 2 lỗ.
-  const phaseOffset = actualPeriod / 2;
-  for (let i = 0; i < count; i++) {
-    points.push(pointAt((phaseOffset + i * actualPeriod) % perimeter));
+  for (const edge of edges) {
+    // Số đoạn dọc theo cạnh này (không tính điểm cuối — điểm cuối chính là
+    // góc bắt đầu của cạnh tiếp theo, đã được thêm ở vòng lặp sau).
+    const segments = Math.max(1, Math.round(edge.length / period));
+    const step = edge.length / segments;
+    for (let i = 0; i < segments; i++) {
+      const s = i * step;
+      points.push({ x: edge.from.x + edge.dir.x * s, y: edge.from.y + edge.dir.y * s });
+    }
   }
   return points;
 }
