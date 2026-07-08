@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.streakpet.app",
+      "sha256_cert_fingerprints": [
+        "THAY_BANG_FINGERPRINT_PWABUILDER_CAP_CHO_BAN_O_BUOC_3"
+      ]
+    }
+  }
+]

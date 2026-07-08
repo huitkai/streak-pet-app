@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Streak &amp; Pet</string>
+    <string name="title_activity_main">Streak &amp; Pet</string>
+    <string name="package_name">com.streakpet.app</string>
+    <string name="custom_url_scheme">com.streakpet.app</string>
+</resources>
