@@ -90,9 +90,11 @@ export default function InstantCaptureChatFlow({
     deleteDraftShot(id).catch((e) => console.error("Xoá ảnh nháp thất bại", e));
   }
 
-  function handleDiscardAll() {
+  // Đóng màn hình lưới — CHỈ dọn blob URL tạm, KHÔNG xoá ảnh nháp đã lưu
+  // trong IndexedDB (trước đây gán nhầm là "Huỷ toàn bộ" nên bấm X tưởng chỉ
+  // để thoát ra lại làm mất hết ảnh).
+  function handleGalleryClose() {
     shots.forEach((s) => URL.revokeObjectURL(s.url));
-    deleteDraftShots(shots.map((s) => s.id)).catch((e) => console.error("Xoá toàn bộ ảnh nháp thất bại", e));
     onClose();
   }
 
@@ -116,7 +118,7 @@ export default function InstantCaptureChatFlow({
         onBackToCamera={() => setStep("camera")}
         onRemove={handleRemove}
         onSend={handleSend}
-        onDiscardAll={handleDiscardAll}
+        onClose={handleGalleryClose}
         sending={sending}
       />
     );

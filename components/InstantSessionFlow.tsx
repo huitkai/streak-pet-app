@@ -29,7 +29,7 @@ import InstantCaptureMulti, { type CapturedShot } from "@/components/InstantCapt
 import InstantGalleryGrid from "@/components/InstantGalleryGrid";
 import { createClient } from "@/lib/supabase/client";
 import { sendStampPhoto } from "@/lib/actions";
-import { listDraftShots, saveDraftShot, deleteDraftShot, deleteDraftShots, clearDraftShots } from "@/lib/instant-shots-store";
+import { listDraftShots, saveDraftShot, deleteDraftShot, deleteDraftShots } from "@/lib/instant-shots-store";
 import type { ConversationSummary } from "@/lib/types";
 
 type Step = "camera" | "gallery";
@@ -87,10 +87,11 @@ export default function InstantSessionFlow({
     deleteDraftShot(id).catch((e) => console.error("Xoá ảnh nháp thất bại", e));
   }
 
-  function handleDiscardAll() {
+  // Đóng màn hình lưới ảnh — CHỈ dọn blob URL tạm trong bộ nhớ (URL này sẽ
+  // vô hiệu sau khi đóng), KHÔNG xoá bản lưu trong IndexedDB. Ảnh nháp vẫn
+  // còn nguyên, mở lại camera lần sau sẽ tự nạp lại đủ.
+  function handleGalleryClose() {
     shots.forEach((s) => URL.revokeObjectURL(s.url));
-    setShots([]);
-    clearDraftShots("session").catch((e) => console.error("Xoá toàn bộ ảnh nháp thất bại", e));
     onClose();
   }
 
@@ -156,7 +157,7 @@ export default function InstantSessionFlow({
           onBackToCamera={() => setStep("camera")}
           onRemove={handleRemove}
           onShare={handleShare}
-          onDiscardAll={handleDiscardAll}
+          onClose={handleGalleryClose}
           sending={sending}
         />
         {sendError && (

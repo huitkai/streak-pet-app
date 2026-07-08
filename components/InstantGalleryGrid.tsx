@@ -7,7 +7,12 @@
  *
  * Bấm vào 1 ảnh MỞ MÀN XEM FULL-SCREEN (<InstantPhotoViewer>) thay vì chỉ
  * tick chọn như trước — từ màn xem đó mới có nút "Chia sẻ" để mở bảng chọn
- * người nhận. Trash trên từng ô vẫn giữ để xoá nhanh không cần mở xem.
+ * người nhận, và menu "..." để xoá từng ảnh/lưu vào thư viện.
+ *
+ * Nút X góc trên trái CHỈ ĐÓNG màn hình — KHÔNG xoá ảnh nháp đã lưu (trước
+ * đây gán nhầm là "Huỷ toàn bộ" khiến bấm X tưởng chỉ để thoát ra lại xoá
+ * sạch hết ảnh, đúng lỗi người dùng báo "thoát ra vào lại là mất ảnh"). Muốn
+ * xoá ảnh nào thì vào xem chi tiết rồi xoá từng tấm qua menu "...".
  *
  * Nền của mỗi ô cố tình tối (bg-black/90) thay vì trắng — vì viền tem PNG
  * màu trắng ngà (#fffdf8) sẽ hoà lẫn vào nền sáng, khó thấy hình dạng răng
@@ -28,7 +33,7 @@ export default function InstantGalleryGrid({
   onBackToCamera,
   onRemove,
   onShare,
-  onDiscardAll,
+  onClose,
   sending,
 }: {
   shots: CapturedShot[];
@@ -38,7 +43,9 @@ export default function InstantGalleryGrid({
   onBackToCamera: () => void;
   onRemove: (id: string) => void;
   onShare: (shot: CapturedShot, recipientIds: string[]) => Promise<void> | void;
-  onDiscardAll: () => void;
+  /** Chỉ đóng màn hình — ảnh nháp chưa gửi vẫn được giữ nguyên trong
+   * IndexedDB để lần sau mở lại vẫn còn. */
+  onClose: () => void;
   sending: boolean;
 }) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -48,8 +55,8 @@ export default function InstantGalleryGrid({
       <div className="safe-top flex items-center justify-between px-4 py-3">
         <button
           type="button"
-          onClick={onDiscardAll}
-          aria-label="Huỷ toàn bộ"
+          onClick={onClose}
+          aria-label="Đóng"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white active:scale-90"
         >
           <XIcon className="h-5 w-5" />

@@ -21,14 +21,15 @@ export default function InstantChatGalleryGrid({
   onBackToCamera,
   onRemove,
   onSend,
-  onDiscardAll,
+  onClose,
   sending,
 }: {
   shots: CapturedShot[];
   onBackToCamera: () => void;
   onRemove: (id: string) => void;
   onSend: (selected: CapturedShot[]) => void;
-  onDiscardAll: () => void;
+  /** Chỉ đóng màn hình — ảnh nháp chưa gửi vẫn được giữ nguyên. */
+  onClose: () => void;
   sending: boolean;
 }) {
   // Mặc định chọn TẤT CẢ ảnh vừa chụp — người dùng bỏ chọn tấm nào không ưng
@@ -51,8 +52,8 @@ export default function InstantChatGalleryGrid({
       <div className="safe-top flex items-center justify-between px-4 py-3">
         <button
           type="button"
-          onClick={onDiscardAll}
-          aria-label="Huỷ toàn bộ"
+          onClick={onClose}
+          aria-label="Đóng"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white active:scale-90"
         >
           <XIcon className="h-5 w-5" />
