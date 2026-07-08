@@ -596,6 +596,17 @@ export default function ChatBox({
     setText((prev) => prev + emoji);
   }
 
+  function friendlyImageUploadError(err: unknown): string {
+    const raw = err instanceof Error ? err.message : String(err ?? "");
+    // Supabase Storage trả nguyên văn tiếng Anh này khi file vượt
+    // file_size_limit của bucket (xem migration-v12-increase-image-limit.sql)
+    // -> dịch lại cho người dùng hiểu thay vì hiện câu tiếng Anh khó hiểu.
+    if (/exceeded the maximum allowed size/i.test(raw)) {
+      return "Ảnh quá nặng để gửi. Vui lòng thử chụp lại (ánh sáng đủ sẽ giúp ảnh nhẹ hơn) hoặc gửi ảnh khác.";
+    }
+    return raw || "Gửi ảnh thất bại.";
+  }
+
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -653,7 +664,7 @@ export default function ChatBox({
     } catch (err) {
       URL.revokeObjectURL(localUrl);
       setUploadPreview(null);
-      setUploadError(err instanceof Error ? err.message : "Gửi ảnh thất bại.");
+      setUploadError(friendlyImageUploadError(err));
     }
   }
 
@@ -715,7 +726,7 @@ export default function ChatBox({
       // revoke localUrl ở đây vì bubble vẫn đang hiển thị ảnh đó cho tới khi
       // người dùng thử gửi lại hoặc xoá tin.
       setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, pending: false, failed: true } : m)));
-      setUploadError(err instanceof Error ? err.message : "Gửi ảnh Chụp nhanh thất bại.");
+      setUploadError(friendlyImageUploadError(err));
     }
   }
 
