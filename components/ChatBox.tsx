@@ -35,7 +35,8 @@ import { ReplyQuoteInline, ReplyComposerBar } from "@/components/ReplyQuote";
 import PinnedBar from "@/components/PinnedBar";
 import SearchOverlay from "@/components/SearchOverlay";
 import VoiceRecorder from "@/components/VoiceRecorder";
-import InstantCapture from "@/components/InstantCapture";
+import InstantCaptureChatFlow from "@/components/InstantCaptureChatFlow";
+import type { CapturedShot } from "@/components/InstantCaptureMulti";
 import VoiceMessageBubble from "@/components/VoiceMessageBubble";
 import ForwardSheet from "@/components/ForwardSheet";
 import {
@@ -191,6 +192,7 @@ export default function ChatBox({
   const [partnerTyping, notifyTyping] = useTypingIndicator(coupleId, userId);
   const [attachOpen, setAttachOpen] = useState(false);
   const [instantCaptureOpen, setInstantCaptureOpen] = useState(false);
+  const [instantSending, setInstantSending] = useState(false);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -681,12 +683,12 @@ export default function ChatBox({
    * dù mạng chậm, chỉ có tick "đang gửi" (pending) chuyển thành "đã gửi" trễ
    * hơn 1 chút khi upload xong.
    */
-  async function handleStampCapture(blob: Blob, width: number, height: number) {
-    setInstantCaptureOpen(false);
-    shouldAutoScroll.current = true;
-    const replyToId = replyingTo?.id ?? null;
-    setReplyingTo(null);
-
+  /**
+   * Gửi 1 ảnh tem đã chụp (dùng cho từng phần tử trong danh sách đã chọn ở
+   * màn hình lưới) — mỗi ảnh hiện bong bóng "đang gửi" NGAY bằng blob cục
+   * bộ, upload chạy ngầm phía sau, y hệt hành vi ảnh đơn trước đây.
+   */
+  async function sendOneStampShot(blob: Blob, width: number, height: number, replyToId: string | null) {
     const localUrl = URL.createObjectURL(blob);
     const optimisticId = tempId();
     const optimistic: MessageRow = {
@@ -698,12 +700,11 @@ export default function ChatBox({
       created_at: new Date().toISOString(),
       pending: true,
     };
-    // Hiện ngay bằng ảnh cục bộ — không chờ upload xong mới thấy gì.
     setMessages((prev) => [...prev, optimistic]);
 
     try {
       const supabase = createClient();
-      const path = `${coupleId}/${userId}-${Date.now()}.png`;
+      const path = `${coupleId}/${userId}-${Date.now()}-${tempId()}.png`;
 
       const { error: upErr } = await supabase.storage
         .from("chat-images")
@@ -727,6 +728,33 @@ export default function ChatBox({
       // người dùng thử gửi lại hoặc xoá tin.
       setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, pending: false, failed: true } : m)));
       setUploadError(friendlyImageUploadError(err));
+    }
+  }
+
+  /**
+   * Nhận danh sách ảnh người dùng đã CHỌN từ màn hình lưới (xem
+   * components/InstantCaptureChatFlow.tsx + InstantGalleryGrid.tsx) sau khi
+   * đã chụp nhiều tấm liên tiếp — thay thế hoàn toàn hành vi cũ "bấm chụp
+   * là gửi luôn, không xem lại/không chọn được" mà người dùng báo lỗi.
+   *
+   * Gửi TUẦN TỰ từng ảnh (không Promise.all song song) — cố ý, giữ đúng
+   * nguyên tắc đã áp dụng ở InstantSessionFlow: nhiều file PNG nặng upload
+   * song song trên mạng di động dễ làm tất cả cùng chậm thay vì xong dần
+   * từng ảnh một.
+   */
+  async function handleStampCaptureMulti(shots: CapturedShot[]) {
+    if (shots.length === 0) return;
+    shouldAutoScroll.current = true;
+    const replyToId = replyingTo?.id ?? null;
+    setReplyingTo(null);
+
+    setInstantSending(true);
+    try {
+      for (const shot of shots) {
+        await sendOneStampShot(shot.blob, shot.width, shot.height, replyToId);
+      }
+    } finally {
+      setInstantSending(false);
     }
   }
 
@@ -1448,7 +1476,11 @@ export default function ChatBox({
       )}
 
       {instantCaptureOpen && (
-        <InstantCapture onCapture={handleStampCapture} onClose={() => setInstantCaptureOpen(false)} />
+        <InstantCaptureChatFlow
+          onSend={handleStampCaptureMulti}
+          onClose={() => setInstantCaptureOpen(false)}
+          sending={instantSending}
+        />
       )}
 
       <div className="safe-bottom relative z-10 border-t border-[var(--border)] bg-[var(--surface)] px-2.5 py-2">
