@@ -25,26 +25,44 @@ export interface StampGrid {
   stepY: number;
 }
 
-/** Số răng cưa tối thiểu 3 mỗi cạnh để không bị nhìn giống hình chữ nhật trơn. */
-function holeCountFor(length: number, holeRadius: number): number {
-  return Math.max(3, Math.round(length / (holeRadius * 2)));
+/**
+ * Số răng cưa tối thiểu 3 mỗi cạnh. `gap` là khoảng hở giữa tâm 2 lỗ liền kề
+ * TRỪ ĐI đúng 2*holeRadius — tức phần "thịt" giấy còn lại giữa 2 lỗ.
+ *
+ * QUAN TRỌNG: nếu gap = 0 (2 lỗ đặt tiếp xúc nhau, tâm cách nhau đúng
+ * 2*holeRadius) thì điểm chạm giữa 2 hình tròn về mặt hình học là 1 đỉnh
+ * nhọn góc 0° — đây chính là nguyên nhân răng cưa nhìn nhọn/sắc thay vì các
+ * u tròn mềm mại như tem thật. Phải luôn chừa 1 khoảng hở dương để giữa 2
+ * lỗ còn lại 1 dải giấy có bề rộng thật, tạo đỉnh tròn/tù thay vì đỉnh nhọn.
+ */
+function holeCountFor(length: number, holeRadius: number, gap: number): number {
+  const period = holeRadius * 2 + gap;
+  return Math.max(3, Math.round(length / period));
 }
 
-export function computeStampGrid(width: number, height: number, holeRadius: number): StampGrid {
-  const nx = holeCountFor(width, holeRadius);
-  const ny = holeCountFor(height, holeRadius);
+export function computeStampGrid(
+  width: number,
+  height: number,
+  holeRadius: number,
+  gap: number = holeRadius * 0.6
+): StampGrid {
+  const nx = holeCountFor(width, holeRadius, gap);
+  const ny = holeCountFor(height, holeRadius, gap);
   return { nx, ny, stepX: width / nx, stepY: height / ny };
 }
 
 /** Bán kính lỗ mặc định — tỉ lệ theo cạnh ngắn của khung (đã tính cả viền
- * trắng) để răng cưa to, tròn, rõ ràng như tem thật thay vì lấm tấm nhỏ vụn. */
+ * trắng). Giữ tỉ lệ viền/bán-kính đủ lớn (xem defaultBorderWidth) để lỗ
+ * không chạm vào nội dung ảnh bên trong. */
 export function defaultHoleRadius(width: number, height: number): number {
-  return Math.max(12, Math.round(Math.min(width, height) * 0.05));
+  return Math.max(10, Math.round(Math.min(width, height) * 0.04));
 }
 
-/** Độ dày viền giấy trắng ngà bao quanh ảnh trước khi đục răng cưa. */
+/** Độ dày viền giấy trắng ngà bao quanh ảnh trước khi đục răng cưa — cố ý
+ * lớn hơn hẳn bán kính lỗ (~1.5x) để lỗ không bao giờ ăn vào nội dung ảnh
+ * và phần "thịt" giấy quanh mỗi lỗ đủ dày, nhìn mềm mại thay vì mỏng dính. */
 export function defaultBorderWidth(width: number, height: number): number {
-  return Math.max(16, Math.round(Math.min(width, height) * 0.06));
+  return Math.max(16, Math.round(Math.min(width, height) * 0.07));
 }
 
 /**
