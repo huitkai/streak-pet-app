@@ -73,7 +73,11 @@ export default function InstantChatGalleryGrid({
           {shots.map((shot) => {
             const isSelected = selected.has(shot.id);
             return (
-              <div key={shot.id} className="relative aspect-square overflow-hidden rounded-lg bg-black/90">
+              <div
+                key={shot.id}
+                className="relative overflow-hidden rounded-lg bg-black/90"
+                style={{ aspectRatio: `${shot.width} / ${shot.height}` }}
+              >
                 <button
                   type="button"
                   onClick={() => toggle(shot.id)}

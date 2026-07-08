@@ -71,7 +71,11 @@ export default function InstantGalleryGrid({
         ) : (
           <div className="grid grid-cols-4 gap-2">
             {shots.map((shot, i) => (
-              <div key={shot.id} className="relative aspect-square overflow-hidden rounded-lg bg-black/90">
+              <div
+                key={shot.id}
+                className="relative overflow-hidden rounded-lg bg-black/90"
+                style={{ aspectRatio: `${shot.width} / ${shot.height}` }}
+              >
                 <button
                   type="button"
                   onClick={() => setViewerIndex(i)}

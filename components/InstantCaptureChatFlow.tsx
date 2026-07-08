@@ -12,17 +12,25 @@
  * ảnh không hề được giữ lại ở đâu để xem lại hay chọn lọc — đây chính là lỗi
  * người dùng báo ("lưu dạng tạm thời", "không thể xem lại", "không chọn được
  * sẽ gửi ảnh nào"). Bản này TÁI SỬ DỤNG nguyên khung camera nhiều tấm
- * (InstantCaptureMulti) + màn hình lưới (InstantGalleryGrid) đã có sẵn cho
- * luồng "Chụp ảnh tức thì" ngoài màn hình chính, chỉ khác ở bước GỬI: thay vì
- * tự upload rồi điều hướng sang /chat, component này giao việc gửi lại cho
- * ChatBox qua prop `onSend` — để ChatBox hiện bong bóng ảnh ngay lập tức
- * bằng blob cục bộ trong danh sách tin nhắn hiện có (không đổi trang), đúng
- * pattern `handleStampCapture` đã dùng cho ảnh đơn trước đây.
+ * (InstantCaptureMulti) + màn hình lưới (InstantChatGalleryGrid) đã có sẵn
+ * cho luồng "Chụp ảnh tức thì" ngoài màn hình chính, chỉ khác ở bước GỬI:
+ * thay vì tự upload rồi điều hướng sang /chat, component này giao việc gửi
+ * lại cho ChatBox qua prop `onSend` — để ChatBox hiện bong bóng ảnh ngay lập
+ * tức bằng blob cục bộ trong danh sách tin nhắn hiện có (không đổi trang),
+ * đúng pattern `handleStampCapture` đã dùng cho ảnh đơn trước đây.
+ *
+ * QUAN TRỌNG — bản sửa lỗi "chụp xong thoát ra là mất, không xem lại được":
+ * y hệt cách InstantSessionFlow đã làm, `shots` được đồng bộ 2 chiều với
+ * IndexedDB (xem lib/instant-shots-store.ts, source="chat" để không lẫn với
+ * ảnh nháp của luồng "Chụp ảnh tức thì" ngoài danh sách hội thoại): chụp
+ * xong lưu ngay, xoá thì xoá luôn bản lưu, gửi xong thì chỉ xoá bản lưu của
+ * đúng ảnh đã chọn gửi — ảnh chưa chọn vẫn còn nguyên cho lần mở camera sau.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import InstantCaptureMulti, { type CapturedShot } from "@/components/InstantCaptureMulti";
 import InstantGalleryGrid from "@/components/InstantChatGalleryGrid";
+import { listDraftShots, saveDraftShot, deleteDraftShot, deleteDraftShots } from "@/lib/instant-shots-store";
 
 type Step = "camera" | "gallery";
 
@@ -40,8 +48,33 @@ export default function InstantCaptureChatFlow({
   const [step, setStep] = useState<Step>("camera");
   const [shots, setShots] = useState<CapturedShot[]>([]);
 
+  // Nạp lại ảnh nháp đã lưu từ lần chụp trước (kể cả phiên đã đóng từ lâu)
+  // ngay khi mở camera lên — xem giải thích ở comment đầu file.
+  useEffect(() => {
+    let cancelled = false;
+    listDraftShots("chat").then((stored) => {
+      if (cancelled) return;
+      setShots((prev) =>
+        prev.length > 0
+          ? prev
+          : stored.map((s) => ({ id: s.id, url: URL.createObjectURL(s.blob), blob: s.blob, width: s.width, height: s.height }))
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function handleShot(shot: CapturedShot) {
     setShots((prev) => [...prev, shot]);
+    saveDraftShot({
+      id: shot.id,
+      blob: shot.blob,
+      width: shot.width,
+      height: shot.height,
+      createdAt: Date.now(),
+      source: "chat",
+    }).catch((e) => console.error("Lưu ảnh nháp thất bại", e));
   }
 
   function handleRemove(id: string) {
@@ -54,10 +87,12 @@ export default function InstantCaptureChatFlow({
       if (next.length === 0) setStep("camera");
       return next;
     });
+    deleteDraftShot(id).catch((e) => console.error("Xoá ảnh nháp thất bại", e));
   }
 
   function handleDiscardAll() {
     shots.forEach((s) => URL.revokeObjectURL(s.url));
+    deleteDraftShots(shots.map((s) => s.id)).catch((e) => console.error("Xoá toàn bộ ảnh nháp thất bại", e));
     onClose();
   }
 
@@ -66,6 +101,11 @@ export default function InstantCaptureChatFlow({
     // Không revoke object URL ở đây — ChatBox đang dùng chính các URL này
     // làm ảnh hiển thị tạm cho bong bóng "đang gửi" trong khung chat.
     await onSend(selected);
+    // Chỉ xoá bản nháp của ĐÚNG các ảnh đã chọn gửi — ảnh nào không chọn lần
+    // này vẫn giữ nguyên làm nháp cho lần chụp sau.
+    await deleteDraftShots(selected.map((s) => s.id)).catch((e) =>
+      console.error("Xoá ảnh nháp đã gửi thất bại", e)
+    );
     onClose();
   }
 

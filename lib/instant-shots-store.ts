@@ -22,6 +22,11 @@ export interface StoredShot {
   width: number;
   height: number;
   createdAt: number;
+  /** Phân biệt ảnh nháp của luồng nào — "session" (Chụp ảnh tức thì ngoài
+   * danh sách hội thoại) hoặc "chat" (Chụp nhanh trong khung chat). Không
+   * set thì mặc định coi là "session" để tương thích ngược với dữ liệu cũ
+   * đã lưu trước khi có field này. */
+  source?: "session" | "chat";
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -72,19 +77,16 @@ export async function deleteDraftShots(ids: string[]): Promise<void> {
   db.close();
 }
 
-export async function clearDraftShots(): Promise<void> {
-  const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
+export async function clearDraftShots(source: "session" | "chat" = "session"): Promise<void> {
+  const ids = (await listDraftShots(source)).map((s) => s.id);
+  if (ids.length === 0) return;
+  await deleteDraftShots(ids);
 }
 
-/** Sắp xếp cũ -> mới (thứ tự chụp) để hiện đúng thứ tự trong lưới. */
-export async function listDraftShots(): Promise<StoredShot[]> {
+/** Sắp xếp cũ -> mới (thứ tự chụp) để hiện đúng thứ tự trong lưới. Truyền
+ * `source` để chỉ lấy đúng ảnh nháp của luồng đó (2 luồng chụp dùng chung 1
+ * IndexedDB nhưng không muốn ảnh nháp của luồng này lẫn vào luồng kia). */
+export async function listDraftShots(source: "session" | "chat" = "session"): Promise<StoredShot[]> {
   const db = await openDb();
   const shots = await new Promise<StoredShot[]>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
@@ -93,5 +95,7 @@ export async function listDraftShots(): Promise<StoredShot[]> {
     req.onerror = () => reject(req.error);
   });
   db.close();
-  return shots.sort((a, b) => a.createdAt - b.createdAt);
+  return shots
+    .filter((s) => (s.source ?? "session") === source)
+    .sort((a, b) => a.createdAt - b.createdAt);
 }

@@ -57,7 +57,7 @@ export default function InstantSessionFlow({
   // ảnh khi thoát ra".
   useEffect(() => {
     let cancelled = false;
-    listDraftShots().then((stored) => {
+    listDraftShots("session").then((stored) => {
       if (cancelled) return;
       setShots(stored.map((s) => ({ id: s.id, url: URL.createObjectURL(s.blob), blob: s.blob, width: s.width, height: s.height })));
     });
@@ -68,9 +68,14 @@ export default function InstantSessionFlow({
 
   function handleShot(shot: CapturedShot) {
     setShots((prev) => [...prev, shot]);
-    saveDraftShot({ id: shot.id, blob: shot.blob, width: shot.width, height: shot.height, createdAt: Date.now() }).catch(
-      (e) => console.error("Lưu ảnh nháp thất bại", e)
-    );
+    saveDraftShot({
+      id: shot.id,
+      blob: shot.blob,
+      width: shot.width,
+      height: shot.height,
+      createdAt: Date.now(),
+      source: "session",
+    }).catch((e) => console.error("Lưu ảnh nháp thất bại", e));
   }
 
   function handleRemove(id: string) {
@@ -85,7 +90,7 @@ export default function InstantSessionFlow({
   function handleDiscardAll() {
     shots.forEach((s) => URL.revokeObjectURL(s.url));
     setShots([]);
-    clearDraftShots().catch((e) => console.error("Xoá toàn bộ ảnh nháp thất bại", e));
+    clearDraftShots("session").catch((e) => console.error("Xoá toàn bộ ảnh nháp thất bại", e));
     onClose();
   }
 
