@@ -76,12 +76,18 @@ export default function InstantGalleryGrid({
         {shots.length === 0 ? (
           <p className="mt-10 text-center text-sm text-white/50">Chưa có ảnh nào — bấm chụp thêm để bắt đầu.</p>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-4 p-2">
             {shots.map((shot, i) => (
               <div
                 key={shot.id}
-                className="relative overflow-hidden rounded-lg bg-black/90"
-                style={{ aspectRatio: `${shot.width} / ${shot.height}` }}
+                className="relative"
+                style={{
+                  aspectRatio: `${shot.width} / ${shot.height}`,
+                  // Xoay nhẹ xen kẽ theo chỉ số — gợi cảm giác 1 xấp tem thật
+                  // được rải ra bàn, giống cách các con tem trong ảnh tham
+                  // khảo không nằm thẳng hàng cứng nhắc.
+                  transform: `rotate(${(i % 5) - 2}deg)`,
+                }}
               >
                 <button
                   type="button"
@@ -89,13 +95,18 @@ export default function InstantGalleryGrid({
                   aria-label="Xem ảnh"
                   className="absolute inset-0 active:scale-95 transition"
                 >
+                  {/* Không dùng overflow-hidden/rounded-lg ở đây nữa — PNG đã
+                      tự có hình dạng răng cưa + góc bo mềm được bake sẵn, bọc
+                      thêm khung bo góc vuông sẽ đè lên và cắt cụt răng cưa ở
+                      góc. Thêm drop-shadow để con tem "nổi" khỏi nền tối,
+                      đúng tinh thần ảnh tem tham khảo thay vì dính bẹt. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shot.url}
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover drop-shadow-[0_3px_8px_rgba(0,0,0,0.55)]"
                   />
                 </button>
               </div>

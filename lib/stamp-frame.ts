@@ -87,7 +87,7 @@ export function defaultHoleRadius(width: number, height: number): number {
  * lớn hơn hẳn bán kính lỗ (~1.5x) để lỗ không bao giờ ăn vào nội dung ảnh
  * và phần "thịt" giấy quanh mỗi lỗ đủ dày, nhìn mềm mại thay vì mỏng dính. */
 export function defaultBorderWidth(width: number, height: number): number {
-  return Math.max(16, Math.round(Math.min(width, height) * 0.07));
+  return Math.max(22, Math.round(Math.min(width, height) * 0.11));
 }
 
 /**

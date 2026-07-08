@@ -70,14 +70,17 @@ export default function InstantChatGalleryGrid({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        <div className="grid grid-cols-3 gap-2">
-          {shots.map((shot) => {
+        <div className="grid grid-cols-3 gap-4 p-2">
+          {shots.map((shot, i) => {
             const isSelected = selected.has(shot.id);
             return (
               <div
                 key={shot.id}
-                className="relative overflow-hidden rounded-lg bg-black/90"
-                style={{ aspectRatio: `${shot.width} / ${shot.height}` }}
+                className="relative"
+                style={{
+                  aspectRatio: `${shot.width} / ${shot.height}`,
+                  transform: `rotate(${(i % 5) - 2}deg)`,
+                }}
               >
                 <button
                   type="button"
@@ -85,13 +88,17 @@ export default function InstantChatGalleryGrid({
                   aria-label={isSelected ? "Bỏ chọn ảnh" : "Chọn ảnh"}
                   className="absolute inset-0"
                 >
+                  {/* Không bọc overflow-hidden/rounded-lg — răng cưa đã được
+                      bake sẵn trong PNG, khung ngoài bo góc vuông sẽ cắt cụt
+                      các lỗ khoét ở góc. drop-shadow thay cho nền đen để tem
+                      nổi khối, giống ảnh tem tham khảo. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shot.url}
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className={`h-full w-full object-cover transition ${isSelected ? "" : "opacity-40"}`}
+                    className={`h-full w-full object-cover transition drop-shadow-[0_3px_8px_rgba(0,0,0,0.55)] ${isSelected ? "" : "opacity-40"}`}
                   />
                 </button>
 
