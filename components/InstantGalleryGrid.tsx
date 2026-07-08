@@ -72,7 +72,7 @@ export default function InstantGalleryGrid({
           {shots.map((shot) => {
             const isSelected = selected.has(shot.id);
             return (
-              <div key={shot.id} className="relative aspect-[4/5] overflow-hidden rounded-lg bg-black/90">
+              <div key={shot.id} className="relative aspect-square overflow-hidden rounded-lg bg-black/90">
                 <button
                   type="button"
                   onClick={() => toggle(shot.id)}

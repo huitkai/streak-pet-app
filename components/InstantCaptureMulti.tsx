@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { XIcon, CameraFlipIcon, ChevronRightIcon } from "@/components/icons";
+import { XIcon, CameraFlipIcon, ChevronRightIcon, ImageIcon } from "@/components/icons";
 import { buildStampPhoto, defaultHoleRadius, drawStampOverlay } from "@/lib/stamp-frame";
 
 const OUTPUT_ASPECT = 4 / 5;
@@ -217,6 +217,22 @@ export default function InstantCaptureMulti({
           className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
         >
           <XIcon className="h-5 w-5" />
+        </button>
+
+        {/* Nút xem danh sách ảnh đã lưu — LUÔN hiện, không phụ thuộc vào việc
+            phiên hiện tại đã chụp được tấm nào chưa (khác nút tròn nhỏ ở
+            thanh dưới, chỉ hiện SAU khi chụp ít nhất 1 tấm trong phiên này).
+            Ảnh được lưu bền trong IndexedDB (xem InstantSessionFlow +
+            lib/instant-shots-store.ts) nên dù đóng camera/tắt app rồi mở lại,
+            bấm nút này vẫn thấy đủ ảnh nháp đã chụp từ trước — đúng lỗi
+            người dùng báo "thoát ra là mất, không xem lại được". */}
+        <button
+          type="button"
+          onClick={onOpenGallery}
+          aria-label="Xem ảnh đã lưu"
+          className="absolute right-16 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
+        >
+          <ImageIcon className="h-[18px] w-[18px]" />
         </button>
 
         <button
