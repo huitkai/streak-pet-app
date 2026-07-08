@@ -176,11 +176,21 @@ export function applyStampMask(sourceCanvas: HTMLCanvasElement, holeRadius?: num
   ctx.globalCompositeOperation = "destination-out";
   ctx.fillStyle = "#000";
 
+  // QUAN TRỌNG VỀ HIỆU NĂNG: gộp TẤT CẢ các lỗ vào MỘT path rồi chỉ gọi
+  // fill() DUY NHẤT MỘT LẦN. Trước đây mỗi lỗ gọi beginPath()+fill() riêng —
+  // dưới composite mode "destination-out", mỗi lần fill() trình duyệt phải
+  // compositing lại TOÀN BỘ canvas (không chỉ vùng vừa vẽ), nên với canvas
+  // độ phân giải cao (giữ nguyên chất lượng camera, có thể vài nghìn px) và
+  // vài chục/cả trăm lỗ quanh chu vi, số lần compositing full-canvas này
+  // chính là nguyên nhân gây đứng máy nhiều giây lúc chụp. Gộp thành 1 path
+  // + 1 fill() cho kết quả HÌNH ẢNH Y HỆT (không đổi hình dạng/độ nét) nhưng
+  // chỉ tốn 1 lần compositing thay vì hàng trăm lần.
+  ctx.beginPath();
   for (const p of points) {
-    ctx.beginPath();
+    ctx.moveTo(p.x + r, p.y);
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fill();
   }
+  ctx.fill();
 
   ctx.globalCompositeOperation = "source-over";
   return out;

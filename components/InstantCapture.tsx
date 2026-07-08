@@ -169,23 +169,46 @@ export default function InstantCapture({
       ctx.translate(outputWidth, 0);
       ctx.scale(-1, 1);
     }
+    // drawImage lấy khung hình từ <video> — bước này BẮT BUỘC làm ngay lúc
+    // còn video, vì video có thể đổi frame/dừng ngay sau khi ta rời màn hình
+    // camera. Đây là bước nhanh (vài ms), không phải điểm chậm.
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, outputWidth, outputHeight);
 
-    const stamped = buildStampPhoto(shot);
-
+    // Nháy trắng ngay lúc bấm chụp — kích hoạt TRƯỚC khi gọi onClose() vì màn
+    // hình camera sắp bị đóng/unmount ngay sau đó (xem bên dưới), nên phải
+    // set state này trước để React còn kịp vẽ 1 frame flash trước khi unmount.
     setFlashing(true);
-    window.setTimeout(() => setFlashing(false), 180);
 
-    // PNG là định dạng nén KHÔNG MẤT DỮ LIỆU (lossless) — giữ nguyên 100%
-    // chất lượng ảnh gốc, đồng thời có alpha channel cho vùng trong suốt tại
-    // các lỗ răng cưa. WebP quality<1 tuy nhẹ hơn nhưng vẫn là nén có mất dữ
-    // liệu (lossy), nên không dùng ở đây theo đúng yêu cầu giữ nguyên chất
-    // lượng ảnh. Phần "cảm giác chậm lúc chụp" được xử lý ở tầng khác —
-    // xem handleStampCapture trong ChatBox.tsx (hiện tin nhắn ngay lập tức,
-    // upload chạy nền) — không đánh đổi bằng chất lượng ảnh.
-    stamped.toBlob((blob) => {
-      if (blob) onCapture(blob, stamped.width, stamped.height);
-    }, "image/png");
+    // QUAN TRỌNG — TÁCH "chuyển màn hình" RA KHỎI "xử lý ảnh nặng":
+    // Trước đây onClose()/onCapture() chỉ được gọi SAU KHI toàn bộ pipeline
+    // (đóng viền tem + khoét răng cưa + encode PNG lossless độ phân giải
+    // gốc) chạy xong — nên màn hình camera đứng im nhiều giây trước khi kịp
+    // chuyển qua khung chat, dù ChatBox đã có sẵn cơ chế hiện tin nhắn ngay
+    // bằng blob cục bộ (xem handleStampCapture). Giờ ta đã có đủ pixel cần
+    // thiết trong `shot` (canvas tạm) rồi, nên KHÔNG cần giữ màn hình camera
+    // mở thêm nữa: đóng ngay lập tức để người dùng thấy chuyển cảnh tức thì,
+    // còn việc build viền tem + khoét răng cưa + encode PNG (phần nặng CPU)
+    // chạy tiếp NGẦM trong closure này — không đổi chất lượng/độ phân giải
+    // ảnh xuất ra, chỉ đổi THỜI ĐIỂM đóng camera.
+    onClose();
+
+    // Nhường 1 tick cho trình duyệt vẽ xong việc đóng camera/mở màn hình chat
+    // trước khi bắt đầu xử lý CPU nặng (build viền + khoét răng cưa + encode
+    // PNG), để chuyển cảnh không bị đứng khựng do main thread đang bận.
+    window.setTimeout(() => {
+      const stamped = buildStampPhoto(shot);
+
+      // PNG là định dạng nén KHÔNG MẤT DỮ LIỆU (lossless) — giữ nguyên 100%
+      // chất lượng ảnh gốc, đồng thời có alpha channel cho vùng trong suốt
+      // tại các lỗ răng cưa. WebP quality<1 tuy nhẹ hơn nhưng vẫn là nén có
+      // mất dữ liệu (lossy), nên không dùng ở đây theo đúng yêu cầu giữ
+      // nguyên chất lượng ảnh. Việc encode này giờ chạy SAU KHI màn hình đã
+      // chuyển, và ChatBox.handleStampCapture đã hiện bubble "đang gửi" bằng
+      // blob cục bộ ngay khi blob này sẵn sàng — không cần chờ upload mạng.
+      stamped.toBlob((blob) => {
+        if (blob) onCapture(blob, stamped.width, stamped.height);
+      }, "image/png");
+    }, 0);
   }
 
   return (
