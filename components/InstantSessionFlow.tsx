@@ -30,16 +30,20 @@ import InstantGalleryGrid from "@/components/InstantGalleryGrid";
 import { createClient } from "@/lib/supabase/client";
 import { sendStampPhoto } from "@/lib/actions";
 import { listDraftShots, saveDraftShot, deleteDraftShot, deleteDraftShots, clearDraftShots } from "@/lib/instant-shots-store";
+import type { ConversationSummary } from "@/lib/types";
 
 type Step = "camera" | "gallery";
 
 export default function InstantSessionFlow({
   coupleId,
   userId,
+  conversations,
   onClose,
 }: {
   coupleId: string;
   userId: string;
+  /** Danh sách hội thoại để hiện trong bảng chọn người nhận khi chia sẻ. */
+  conversations: ConversationSummary[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -86,47 +90,42 @@ export default function InstantSessionFlow({
   }
 
   /**
-   * Gửi TUẦN TỰ từng ảnh đã chọn (không Promise.all song song) — cố ý, vì
-   * gửi song song nhiều file PNG nặng (giữ nguyên độ phân giải, xem
-   * InstantCapture.tsx) cùng lúc dễ bão hoà băng thông upload trên mạng di
-   * động, khiến TẤT CẢ đều chậm thay vì xong dần từng ảnh một.
+   * Chia sẻ 1 ảnh (đang mở trong InstantPhotoViewer) tới danh sách người
+   * nhận đã chọn trong RecipientPickerSheet. Upload file 1 LẦN rồi gửi bản
+   * ghi message TUẦN TỰ tới từng hội thoại nhận (không Promise.all song
+   * song để không bão hoà băng thông trên mạng di động).
    */
-  async function handleSend(selected: CapturedShot[]) {
-    if (selected.length === 0) return;
+  async function handleShare(shot: CapturedShot, recipientIds: string[]) {
+    if (recipientIds.length === 0) return;
     setSending(true);
     setSendError(null);
     const supabase = createClient();
-    const sentIds: string[] = [];
 
     try {
-      for (const shot of selected) {
-        const path = `${coupleId}/${userId}-${Date.now()}-${shot.id}.png`;
-        const { error: upErr } = await supabase.storage
-          .from("chat-images")
-          .upload(path, shot.blob, { upsert: false, cacheControl: "31536000", contentType: "image/png" });
-        if (upErr) throw upErr;
+      const path = `${coupleId}/${userId}-${Date.now()}-${shot.id}.png`;
+      const { error: upErr } = await supabase.storage
+        .from("chat-images")
+        .upload(path, shot.blob, { upsert: false, cacheControl: "31536000", contentType: "image/png" });
+      if (upErr) throw upErr;
 
-        const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
-        const res = await sendStampPhoto(coupleId, pub.publicUrl, shot.width, shot.height, null);
+      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
+
+      for (const recipientId of recipientIds) {
+        const res = await sendStampPhoto(recipientId, pub.publicUrl, shot.width, shot.height, null);
         if (!res?.message) throw new Error("Gửi ảnh thất bại.");
-        sentIds.push(shot.id);
       }
 
-      // Chỉ xoá bản nháp của ĐÚNG các ảnh đã gửi thành công — ảnh nào người
-      // dùng không chọn gửi lần này vẫn giữ nguyên làm nháp cho lần sau.
-      await removeSentDrafts(sentIds);
+      // Ảnh đã chia sẻ xong thì xoá khỏi danh sách nháp — không xoá các ảnh
+      // khác trong danh sách.
+      await removeSentDrafts([shot.id]);
       router.push("/chat");
       onClose();
     } catch (err) {
-      // Gửi dở giữa chừng: các ảnh ĐÃ gửi thành công (sentIds) vẫn nên xoá
-      // khỏi nháp để không bị gửi trùng khi bấm gửi lại — ảnh gây lỗi và các
-      // ảnh sau đó vẫn giữ nguyên trong danh sách để người dùng thử lại.
-      if (sentIds.length > 0) await removeSentDrafts(sentIds);
       const raw = err instanceof Error ? err.message : String(err ?? "");
       setSendError(
         /exceeded the maximum allowed size/i.test(raw)
-          ? "Có ảnh quá nặng để gửi. Vui lòng bỏ chọn ảnh đó và thử lại."
-          : "Gửi ảnh thất bại, vui lòng thử lại."
+          ? "Ảnh này quá nặng để gửi. Vui lòng thử lại."
+          : "Chia sẻ ảnh thất bại, vui lòng thử lại."
       );
     } finally {
       setSending(false);
@@ -147,9 +146,11 @@ export default function InstantSessionFlow({
       <>
         <InstantGalleryGrid
           shots={shots}
+          conversations={conversations}
+          defaultRecipientId={coupleId}
           onBackToCamera={() => setStep("camera")}
           onRemove={handleRemove}
-          onSend={handleSend}
+          onShare={handleShare}
           onDiscardAll={handleDiscardAll}
           sending={sending}
         />

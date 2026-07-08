@@ -173,6 +173,7 @@ export default function ConversationListClient({
         <InstantSessionFlow
           coupleId={activeCoupleId}
           userId={myUserId}
+          conversations={conversations}
           onClose={() => setInstantOpen(false)}
         />
       )}

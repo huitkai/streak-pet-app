@@ -5,6 +5,10 @@
  * lưới 4 ảnh/dòng, mỗi ảnh vẫn giữ nguyên khung tem răng cưa đã bake sẵn lúc
  * chụp (không cần vẽ lại gì thêm, chỉ hiện đúng file PNG đã có).
  *
+ * Bấm vào 1 ảnh MỞ MÀN XEM FULL-SCREEN (<InstantPhotoViewer>) thay vì chỉ
+ * tick chọn như trước — từ màn xem đó mới có nút "Chia sẻ" để mở bảng chọn
+ * người nhận. Trash trên từng ô vẫn giữ để xoá nhanh không cần mở xem.
+ *
  * Nền của mỗi ô cố tình tối (bg-black/90) thay vì trắng — vì viền tem PNG
  * màu trắng ngà (#fffdf8) sẽ hoà lẫn vào nền sáng, khó thấy hình dạng răng
  * cưa; nền tối giúp khung tem nổi bật rõ ràng, đúng cảm giác đang xem 1 xấp
@@ -12,38 +16,32 @@
  */
 
 import { useState } from "react";
-import { XIcon, TrashIcon, SendIcon, CheckIcon, CameraFlipIcon } from "@/components/icons";
+import { XIcon, CameraFlipIcon } from "@/components/icons";
+import InstantPhotoViewer from "@/components/InstantPhotoViewer";
 import type { CapturedShot } from "@/components/InstantCaptureMulti";
+import type { ConversationSummary } from "@/lib/types";
 
 export default function InstantGalleryGrid({
   shots,
+  conversations,
+  defaultRecipientId,
   onBackToCamera,
   onRemove,
-  onSend,
+  onShare,
   onDiscardAll,
   sending,
 }: {
   shots: CapturedShot[];
+  /** Danh sách hội thoại có thể chia sẻ tới — hiện thường chỉ có 1 (couple). */
+  conversations: ConversationSummary[];
+  defaultRecipientId?: string | null;
   onBackToCamera: () => void;
   onRemove: (id: string) => void;
-  onSend: (selected: CapturedShot[]) => void;
+  onShare: (shot: CapturedShot, recipientIds: string[]) => Promise<void> | void;
   onDiscardAll: () => void;
   sending: boolean;
 }) {
-  // Mặc định chọn TẤT CẢ ảnh vừa chụp — người dùng bỏ chọn tấm nào không ưng
-  // thay vì phải tự chọn từng tấm, vì đa số trường hợp sẽ muốn gửi hết.
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(shots.map((s) => s.id)));
-
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  const selectedShots = shots.filter((s) => selected.has(s.id));
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
@@ -68,61 +66,41 @@ export default function InstantGalleryGrid({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        <div className="grid grid-cols-4 gap-2">
-          {shots.map((shot) => {
-            const isSelected = selected.has(shot.id);
-            return (
+        {shots.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-white/50">Chưa có ảnh nào — bấm chụp thêm để bắt đầu.</p>
+        ) : (
+          <div className="grid grid-cols-4 gap-2">
+            {shots.map((shot, i) => (
               <div key={shot.id} className="relative aspect-square overflow-hidden rounded-lg bg-black/90">
                 <button
                   type="button"
-                  onClick={() => toggle(shot.id)}
-                  aria-label={isSelected ? "Bỏ chọn ảnh" : "Chọn ảnh"}
-                  className="absolute inset-0"
+                  onClick={() => setViewerIndex(i)}
+                  aria-label="Xem ảnh"
+                  className="absolute inset-0 active:scale-95 transition"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={shot.url}
-                    alt=""
-                    className={`h-full w-full object-cover transition ${isSelected ? "" : "opacity-40"}`}
-                  />
-                </button>
-
-                <div
-                  className={`pointer-events-none absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                    isSelected ? "border-[var(--brand)] bg-[var(--brand)]" : "border-white/80 bg-black/30"
-                  }`}
-                >
-                  {isSelected && <CheckIcon className="h-3 w-3 text-white" strokeWidth={3} />}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onRemove(shot.id)}
-                  aria-label="Xoá ảnh này"
-                  className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white active:scale-90"
-                >
-                  <TrashIcon className="h-3 w-3" />
+                  <img src={shot.url} alt="" className="h-full w-full object-cover" />
                 </button>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="safe-bottom flex items-center justify-between gap-3 border-t border-white/10 px-4 py-3">
-        <p className="text-xs text-white/60">
-          {selectedShots.length > 0 ? `Đã chọn ${selectedShots.length} ảnh` : "Chưa chọn ảnh nào"}
-        </p>
-        <button
-          type="button"
-          onClick={() => onSend(selectedShots)}
-          disabled={selectedShots.length === 0 || sending}
-          className="flex items-center gap-1.5 rounded-full bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-white active:scale-95 disabled:opacity-40"
-        >
-          {sending ? "Đang gửi..." : "Gửi"}
-          <SendIcon className="h-4 w-4" />
-        </button>
-      </div>
+      {viewerIndex !== null && (
+        <InstantPhotoViewer
+          shots={shots}
+          initialIndex={viewerIndex}
+          conversations={conversations}
+          defaultRecipientId={defaultRecipientId}
+          sending={sending}
+          onClose={() => setViewerIndex(null)}
+          onRemove={(id) => {
+            onRemove(id);
+          }}
+          onShare={onShare}
+        />
+      )}
     </div>
   );
 }
