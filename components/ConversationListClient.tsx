@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import ConversationRow from "@/components/ConversationRow";
+import InstantSessionFlow from "@/components/InstantSessionFlow";
 import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
 import type { ConversationSummary, ProfileRow } from "@/lib/types";
 
@@ -19,6 +20,11 @@ export default function ConversationListClient({
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [instantOpen, setInstantOpen] = useState(false);
+  // Hiện tại app chỉ hỗ trợ đúng 1 cuộc trò chuyện (couple) — lấy id từ phần
+  // tử đầu tiên. Khi mở rộng nhiều cuộc trò chuyện sẽ cần cho người dùng
+  // chọn gửi vào hội thoại nào trước khi mở camera.
+  const activeCoupleId = conversations[0]?.id ?? null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -75,6 +81,7 @@ export default function ConversationListClient({
                   <SearchIcon className="h-[18px] w-[18px]" />
                 </button>
               )}
+
               <button
                 type="button"
                 onClick={() => setComingSoonOpen(true)}
@@ -125,6 +132,20 @@ export default function ConversationListClient({
             bạn bè, anh chị em... — chỉ cần đổ thêm vào mảng `conversations`. */}
       </div>
 
+      {/* Nút "+" nổi kiểu Messenger — bấm vào MỞ THẲNG CAMERA, không qua menu
+          trung gian nào. Đặt trên MobileTabBar (chỉ hiện <768px) nên chỉ
+          hiện ở mobile, giống đúng vị trí trong ảnh tham khảo. */}
+      {activeCoupleId && (
+        <button
+          type="button"
+          onClick={() => setInstantOpen(true)}
+          aria-label="Chụp ảnh tức thì"
+          className="safe-bottom fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition active:scale-90 md:hidden"
+        >
+          <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
+        </button>
+      )}
+
       {comingSoonOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div className="absolute inset-0 bg-black/35" onClick={() => setComingSoonOpen(false)} aria-hidden />
@@ -146,6 +167,14 @@ export default function ConversationListClient({
             </button>
           </div>
         </div>
+      )}
+
+      {instantOpen && activeCoupleId && (
+        <InstantSessionFlow
+          coupleId={activeCoupleId}
+          userId={myUserId}
+          onClose={() => setInstantOpen(false)}
+        />
       )}
     </div>
   );
