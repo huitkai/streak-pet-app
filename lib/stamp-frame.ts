@@ -27,6 +27,77 @@ export interface Point {
   y: number;
 }
 
+export interface StampAccent {
+  /** Màu viền giấy — pha rất nhạt từ màu chủ đạo của ảnh, vẫn giữ cảm giác
+   * giấy tem chứ không ám màu quá đậm. */
+  border: string;
+  /** Màu "mực" đậm cùng tông, dùng để in số hiệu + dấu mộc — tương phản đủ
+   * để đọc được trên nền viền nhạt. */
+  ink: string;
+}
+
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    switch (max) {
+      case r: h = ((g - b) / d) % 6; break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4;
+    }
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, s, l];
+}
+
+function hslToCss(h: number, s: number, l: number): string {
+  return `hsl(${Math.round(h)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+}
+
+/**
+ * Lấy màu chủ đạo của ảnh bằng cách lấy mẫu thưa (mỗi 8px) toàn bộ canvas rồi
+ * trung bình cộng — đủ nhanh cho ảnh camera độ phân giải cao mà vẫn đại diện
+ * đúng tông màu tổng thể (không cần thuật toán clustering phức tạp).
+ */
+export function extractDominantAccent(photoCanvas: HTMLCanvasElement): StampAccent {
+  const ctx = photoCanvas.getContext("2d");
+  if (!ctx) return { border: "#f2e6cc", ink: "#8a7a5c" };
+
+  const { width, height } = photoCanvas;
+  const step = 8;
+  let r = 0, g = 0, b = 0, count = 0;
+  const data = ctx.getImageData(0, 0, width, height).data;
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const i = (y * width + x) * 4;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      count++;
+    }
+  }
+  r /= count; g /= count; b /= count;
+  const [h, s] = rgbToHsl(r, g, b);
+
+  // Viền: thay vì kéo về gần trắng trung tính (lạnh), pha hue của ảnh với 1
+  // hue "kem cổ điển" cố định (~40°, giống giấy tem ngả vàng theo thời
+  // gian) — ảnh càng trung tính thì viền càng ngả về kem đó, ảnh có màu rõ
+  // thì viền hơi nghiêng theo màu ảnh nhưng vẫn giữ chất giấy ấm.
+  const CREAM_HUE = 40;
+  const borderHue = CREAM_HUE * 0.7 + h * 0.3;
+  const borderSat = Math.max(0.16, Math.min(s, 0.35) * 0.5);
+  const border = hslToCss(borderHue, borderSat, 0.92);
+  // Mực: cùng hue, tăng saturation + hạ độ sáng để tương phản, đọc rõ trên
+  // nền viền nhạt.
+  const ink = hslToCss(h, Math.max(s, 0.35), 0.32);
+  return { border, ink };
+}
+
 /**
  * Tính vị trí các tâm lỗ dọc theo TOÀN BỘ chu vi hình chữ nhật (width x
  * height), đi 1 vòng liên tục theo chiều kim đồng hồ bắt đầu từ góc trên-trái
@@ -98,7 +169,7 @@ export function defaultBorderWidth(width: number, height: number): number {
 export function addStampBorder(
   photoCanvas: HTMLCanvasElement,
   borderWidth?: number,
-  borderColor = "#fffdf8"
+  borderColor = "#f2e6cc"
 ): HTMLCanvasElement {
   const bw = borderWidth ?? defaultBorderWidth(photoCanvas.width, photoCanvas.height);
   const out = document.createElement("canvas");
@@ -197,13 +268,66 @@ export function applyStampMask(sourceCanvas: HTMLCanvasElement, holeRadius?: num
 }
 
 /**
+ * In "số hiệu tem" (2 chữ số, giống mệnh giá tem thật) ở góc trên-trái và
+ * 1 dấu mộc tròn kiểu bưu điện ở góc dưới-phải — cả 2 đều nằm gọn trong dải
+ * viền giấy, cách mép ngoài 1 khoảng để không bị răng cưa khoét trúng.
+ * `seed` quyết định số hiệu hiển thị, để mỗi tấm trong 1 buổi chụp có ký
+ * hiệu khác nhau thay vì lặp lại y hệt.
+ */
+function drawStampAccentMarks(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  borderWidth: number,
+  accent: StampAccent,
+  seed: number
+) {
+  const inset = borderWidth * 0.5;
+  const number = String(10 + (seed % 89)).padStart(2, "0");
+
+  ctx.save();
+  ctx.fillStyle = accent.ink;
+  ctx.font = `700 ${Math.round(borderWidth * 0.62)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.globalAlpha = 0.92;
+  ctx.fillText(number, inset * 0.7, inset);
+  ctx.restore();
+
+  const cx = width - inset;
+  const cy = height - inset;
+  const r = borderWidth * 0.34;
+  ctx.save();
+  ctx.strokeStyle = accent.ink;
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = Math.max(1.5, borderWidth * 0.06);
+  ctx.setLineDash([r * 0.35, r * 0.35]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
+  ctx.fillStyle = accent.ink;
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
  * Tiện ích gộp 2 bước: bọc viền trắng + đục răng cưa, dùng trong
  * InstantCapture.tsx ngay sau khi chụp xong 1 khung hình.
  */
 export function buildStampPhoto(
   photoCanvas: HTMLCanvasElement,
-  options?: { borderWidth?: number; holeRadius?: number; borderColor?: string }
+  options?: { borderWidth?: number; holeRadius?: number; borderColor?: string; seed?: number }
 ): HTMLCanvasElement {
-  const bordered = addStampBorder(photoCanvas, options?.borderWidth, options?.borderColor);
+  const bw = options?.borderWidth ?? defaultBorderWidth(photoCanvas.width, photoCanvas.height);
+  const accent = extractDominantAccent(photoCanvas);
+  const bordered = addStampBorder(photoCanvas, bw, options?.borderColor ?? accent.border);
+  const ctx = bordered.getContext("2d");
+  if (ctx) {
+    drawStampAccentMarks(ctx, bordered.width, bordered.height, bw, accent, options?.seed ?? Date.now());
+  }
   return applyStampMask(bordered, options?.holeRadius ?? defaultHoleRadius(bordered.width, bordered.height));
 }
+
