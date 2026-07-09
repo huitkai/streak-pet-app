@@ -84,17 +84,19 @@ export function extractDominantAccent(photoCanvas: HTMLCanvasElement): StampAcce
   r /= count; g /= count; b /= count;
   const [h, s] = rgbToHsl(r, g, b);
 
-  // Viền: thay vì kéo về gần trắng trung tính (lạnh), pha hue của ảnh với 1
-  // hue "kem cổ điển" cố định (~40°, giống giấy tem ngả vàng theo thời
-  // gian) — ảnh càng trung tính thì viền càng ngả về kem đó, ảnh có màu rõ
-  // thì viền hơi nghiêng theo màu ảnh nhưng vẫn giữ chất giấy ấm.
+  // Viền: pha hue ảnh với hue kem cổ điển (~40°) nhưng để ẢNH chiếm phần
+  // lớn (60%) — trước đây cream lấn át 70% khiến mọi tấm ra gần như cùng 1
+  // màu, không còn bám theo tông ảnh thật. Saturation cũng lấy thẳng từ độ
+  // bão hoà thật của ảnh (nhân hệ số) thay vì chặn trần quá thấp, để ảnh
+  // càng rực màu thì viền càng rõ tông đó; ảnh xám/trung tính tự nhiên vẫn
+  // ngả về kem vì s gần 0.
   const CREAM_HUE = 40;
-  const borderHue = CREAM_HUE * 0.7 + h * 0.3;
-  const borderSat = Math.max(0.16, Math.min(s, 0.35) * 0.5);
-  const border = hslToCss(borderHue, borderSat, 0.92);
+  const borderHue = h * 0.6 + CREAM_HUE * 0.4;
+  const borderSat = Math.max(0.14, Math.min(s * 0.85, 0.55));
+  const border = hslToCss(borderHue, borderSat, 0.9);
   // Mực: cùng hue, tăng saturation + hạ độ sáng để tương phản, đọc rõ trên
   // nền viền nhạt.
-  const ink = hslToCss(h, Math.max(s, 0.35), 0.32);
+  const ink = hslToCss(h, Math.max(s, 0.35), 0.3);
   return { border, ink };
 }
 
@@ -285,29 +287,84 @@ function drawStampAccentMarks(
   const inset = borderWidth * 0.5;
   const number = String(10 + (seed % 89)).padStart(2, "0");
 
-  ctx.save();
-  ctx.fillStyle = accent.ink;
-  ctx.font = `700 ${Math.round(borderWidth * 0.62)}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
-  ctx.globalAlpha = 0.92;
-  ctx.fillText(number, inset * 0.7, inset);
-  ctx.restore();
-
-  const cx = width - inset;
-  const cy = height - inset;
-  const r = borderWidth * 0.34;
+  // --- Khung viền kép, cách mép ngoài & mép ảnh 1 khoảng đều nhau — chi
+  // tiết đặc trưng nhất của tem sưu tầm thật (frame line mảnh chạy quanh
+  // toàn bộ con tem), hiện tại đang thiếu hẳn nên ký hiệu trông trơ trọi.
+  const frameOuter = borderWidth * 0.22;
+  const frameInner = borderWidth * 0.3;
   ctx.save();
   ctx.strokeStyle = accent.ink;
-  ctx.globalAlpha = 0.55;
-  ctx.lineWidth = Math.max(1.5, borderWidth * 0.06);
-  ctx.setLineDash([r * 0.35, r * 0.35]);
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = Math.max(1, borderWidth * 0.03);
+  ctx.strokeRect(
+    frameOuter,
+    frameOuter,
+    width - frameOuter * 2,
+    height - frameOuter * 2
+  );
+  ctx.globalAlpha = 0.28;
+  ctx.strokeRect(
+    frameInner,
+    frameInner,
+    width - frameInner * 2,
+    height - frameInner * 2
+  );
+  ctx.restore();
+
+  // --- Số hiệu kiểu mệnh giá, font serif để ra chất cổ điển thay vì chữ
+  // sans hiện đại, kèm 1 gạch chân ngắn bên dưới giống cách tem thật gạch
+  // dưới mệnh giá.
+  ctx.save();
+  ctx.fillStyle = accent.ink;
+  ctx.font = `700 ${Math.round(borderWidth * 0.68)}px Georgia, "Times New Roman", serif`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.globalAlpha = 0.94;
+  const numX = inset * 0.75;
+  ctx.fillText(number, numX, inset);
+  const numWidth = ctx.measureText(number).width;
+  ctx.globalAlpha = 0.6;
+  ctx.lineWidth = Math.max(1, borderWidth * 0.035);
+  ctx.beginPath();
+  ctx.moveTo(numX, inset + borderWidth * 0.32);
+  ctx.lineTo(numX + numWidth, inset + borderWidth * 0.32);
+  ctx.stroke();
+  ctx.restore();
+
+  // --- Dấu mộc bưu điện: vòng tròn kép + các vạch tia toả ra (cancellation
+  // mark) thay vì 1 vòng nét đứt trơn như trước — đúng đặc điểm dấu mộc thật
+  // hay có ở góc tem trong ảnh tham khảo.
+  const cx = width - inset;
+  const cy = height - inset;
+  const r = borderWidth * 0.36;
+  ctx.save();
+  ctx.strokeStyle = accent.ink;
+  ctx.globalAlpha = 0.6;
+  ctx.lineWidth = Math.max(1.2, borderWidth * 0.045);
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r * 0.62, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const tickCount = 10;
+  for (let i = 0; i < tickCount; i++) {
+    const angle = (i / tickCount) * Math.PI * 2 + (seed % 100) * 0.01;
+    const x1 = cx + Math.cos(angle) * r * 1.08;
+    const y1 = cy + Math.sin(angle) * r * 1.08;
+    const x2 = cx + Math.cos(angle) * r * 1.32;
+    const y2 = cy + Math.sin(angle) * r * 1.32;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 0.75;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
   ctx.fillStyle = accent.ink;
   ctx.fill();
   ctx.restore();
