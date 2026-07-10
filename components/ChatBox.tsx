@@ -25,6 +25,9 @@ import {
   fetchMessagesAround,
 } from "@/lib/actions";
 import { decodeMessage, encodeImage, encodeStampPhoto, shouldShowTimeDivider } from "@/lib/message-format";
+import { getCachedChat, patchCachedChat } from "@/lib/chat-cache";
+import { fetchLatestChatData } from "@/lib/chat-client-data";
+import { getOrCacheImage } from "@/lib/message-image-cache";
 import TimeText from "@/components/TimeText";
 import { StickerArt, type StickerId } from "@/components/Stickers";
 import StickerPicker from "@/components/StickerPicker";
@@ -133,13 +136,40 @@ function MessageImage({
   imgClassName?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
+  // ---- Cache ảnh cục bộ (IndexedDB, xem lib/message-image-cache.ts): ảnh
+  // đã từng xem sẽ hiện lại TỨC THÌ từ đĩa cục bộ ở mọi lần vào lại khung
+  // chat sau này, không phụ thuộc HTTP cache của trình duyệt/webview (vốn có
+  // thể bị hệ điều hành dọn bất cứ lúc nào, đúng nguyên nhân "thoát ra vào
+  // lại phải tải lại ảnh" người dùng gặp phải). Trong lúc chưa có trong
+  // cache, vẫn dùng thẳng `src` gốc để không trễ hiển thị lần xem đầu tiên. ----
+  const [resolvedSrc, setResolvedSrc] = useState(src);
+  const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoaded(false);
+    setResolvedSrc(src);
+    getOrCacheImage(src).then((cachedUrl) => {
+      if (cancelled || !cachedUrl) return;
+      objectUrlRef.current = cachedUrl;
+      setResolvedSrc(cachedUrl);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, [src]);
+
   return (
     <div className={`relative overflow-hidden ${className}`} style={aspectRatio ? { aspectRatio } : undefined}>
       {!loaded && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
       )}
       <img
-        src={src}
+        src={resolvedSrc}
         alt={alt}
         loading="lazy"
         onLoad={() => setLoaded(true)}
@@ -154,35 +184,35 @@ export default function ChatBox({
   coupleId,
   userId,
   partnerId,
-  initialMessages,
   species,
   accessory = "none",
   initialPet,
   myProfile,
   partnerProfile,
-  initialReads,
-  initialDeliveries,
-  initialReactions,
-  initialPins,
-  initialHiddenIds,
 }: {
   coupleId: string;
   userId: string;
   partnerId: string | null;
-  initialMessages: MessageRow[];
   species: PetSpecies;
   accessory?: PetAccessoryValue;
   initialPet: PetRow;
   myProfile: ProfileRow | null;
   partnerProfile: ProfileRow | null;
-  initialReads: MessageReadRow[];
-  initialDeliveries: MessageDeliveryRow[];
-  initialReactions: ReactionRow[];
-  initialPins: PinnedMessageRow[];
-  initialHiddenIds: string[];
 }) {
-  const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
-  const [pet, setPet] = useState(initialPet);
+  // ---- Cache-first: nếu couple này đã từng mở khung chat trong phiên hiện
+  // tại (kể cả sau khi thoát ra danh sách rồi vào lại), lib/chat-cache.ts đã
+  // giữ sẵn bản tin nhắn/reads/reactions/pins/hidden gần nhất — dùng NGAY
+  // làm state khởi tạo (lazy initializer chỉ chạy 1 lần) để màn hình hiện
+  // đầy đủ tức thì, không phải chờ round-trip mạng nào cả. Nếu chưa có cache
+  // (lần đầu mở app) thì state bắt đầu rỗng và sẽ được `useEffect` tải nền
+  // bên dưới lấp đầy — xem đoạn "Tải/đồng bộ dữ liệu chat" phía dưới. ----
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ cần đọc cache
+  // đúng 1 lần lúc mount để seed state khởi tạo, không cần đọc lại khi
+  // coupleId đổi (ChatBox được mount lại theo route mỗi lần đổi couple).
+  const cached = useMemo(() => getCachedChat(coupleId), []);
+
+  const [messages, setMessages] = useState<MessageRow[]>(cached?.messages ?? []);
+  const [pet, setPet] = useState(cached?.pet ?? initialPet);
   const variant = useMemo(() => variantForCouple(coupleId, species), [coupleId, species]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -194,7 +224,7 @@ export default function ChatBox({
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [reactions, setReactions] = useState<ReactionMap>(() => reactionsFromRows(initialReactions));
+  const [reactions, setReactions] = useState<ReactionMap>(() => reactionsFromRows(cached?.reactions ?? []));
   const [reactionPickerFor, setReactionPickerFor] = useState<string | null>(null);
   const [dockFor, setDockFor] = useState<string | null>(null);
   // Mục 6: EmojiFullPicker mở riêng cho 1 tin (khi bấm nút "+" trong
@@ -203,20 +233,20 @@ export default function ChatBox({
   const [fullEmojiFor, setFullEmojiFor] = useState<string | null>(null);
   const [revealedTimeId, setRevealedTimeId] = useState<string | null>(null);
   const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(
-    initialReads.find((r) => r.user_id === partnerId)?.last_read_at ?? null
+    (cached?.reads ?? []).find((r) => r.user_id === partnerId)?.last_read_at ?? null
   );
   /** Mốc "đối phương đã NHẬN tới đâu" — độc lập với partnerLastReadAt, xem
    * migration-v10-delivered-status.sql. Dùng để hiện tick đúp XÁM (đã nhận,
    * chưa xem) khác với tick đúp màu brand (đã xem). */
   const [partnerLastDeliveredAt, setPartnerLastDeliveredAt] = useState<string | null>(
-    initialDeliveries.find((d) => d.user_id === partnerId)?.last_delivered_at ?? null
+    (cached?.deliveries ?? []).find((d) => d.user_id === partnerId)?.last_delivered_at ?? null
   );
   /** Trạng thái vuốt-để-trả-lời đang hoạt động trên bong bóng nào, kéo được
    * bao nhiêu px — chỉ 1 bong bóng vuốt tại 1 thời điểm nên gộp chung 1 state
    * thay vì 1 state riêng cho từng tin nhắn (tránh re-render toàn danh sách). */
   const [swipeState, setSwipeState] = useState<{ id: string; dx: number } | null>(null);
-  const [pins, setPins] = useState<PinnedMessageRow[]>(initialPins);
-  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set(initialHiddenIds));
+  const [pins, setPins] = useState<PinnedMessageRow[]>(cached?.pins ?? []);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set(cached?.hiddenIds ?? []));
   // Mục 7: tin đang trong lúc chạy animate-bubble-out (đã bấm "Xoá ở phía
   // tôi" nhưng chưa tới lúc lọc hẳn khỏi `visibleMessages`) — tách riêng
   // khỏi `hiddenIds` vì hiddenIds lọc NGAY LẬP TỨC, không kịp chạy animation.
@@ -228,7 +258,10 @@ export default function ChatBox({
   const [searchOpen, setSearchOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [hasMoreOlder, setHasMoreOlder] = useState(initialMessages.length >= PAGE_SIZE);
+  const [hasMoreOlder, setHasMoreOlder] = useState((cached?.messages.length ?? 0) >= PAGE_SIZE);
+  // Chỉ hiện skeleton tải ban đầu khi KHÔNG có cache nào cả (lần đầu mở app
+  // trong phiên này) — có cache thì luôn hiện ngay dữ liệu cũ, không skeleton.
+  const [initialLoading, setInitialLoading] = useState(!cached);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -248,6 +281,46 @@ export default function ChatBox({
   }, [messages]);
 
   const visibleMessages = useMemo(() => messages.filter((m) => !hiddenIds.has(m.id)), [messages, hiddenIds]);
+
+  // ---- Tải/đồng bộ dữ liệu chat: LUÔN chạy 1 lần khi vào khung chat để lấy
+  // bản mới nhất từ Supabase (trực tiếp từ trình duyệt — xem lib/chat-client-
+  // data.ts, nhanh hơn đi vòng qua Next server), nhưng KHÔNG chặn màn hình
+  // nếu đã có cache: dữ liệu cache hiện ra ngay (xem lazy state init phía
+  // trên), còn effect này chỉ âm thầm vá lại (merge) khi có gì mới hơn. Nếu
+  // chưa có cache (lần đầu mở app) thì đây chính là lượt tải đầu tiên, có
+  // hiện skeleton chờ (initialLoading) trong lúc chờ. ----
+  useEffect(() => {
+    let cancelled = false;
+    fetchLatestChatData(coupleId, userId)
+      .then((fresh) => {
+        if (cancelled || !fresh) return;
+        setMessages((prev) => {
+          // Giữ lại các tin optimistic đang "pending" (vừa gửi, server chưa
+          // kịp trả về qua realtime) và các tin cũ hơn đã tải bằng phân
+          // trang (fetchOlderMessages) mà đợt tải mới nhất (chỉ PAGE_SIZE
+          // tin gần nhất) không có — tránh mất tin đã cuộn lên xem.
+          const pendingOnes = prev.filter((m) => m.pending);
+          const oldestFreshAt = fresh.messages[0]?.created_at ?? "";
+          const olderLoaded = prev.filter((m) => !m.pending && m.created_at < oldestFreshAt);
+          return [...olderLoaded, ...fresh.messages, ...pendingOnes.filter((p) => !fresh.messages.some((f) => f.sender_id === p.sender_id && f.content === p.content))];
+        });
+        setReactions(reactionsFromRows(fresh.reactions));
+        setPins(fresh.pins);
+        setHiddenIds(new Set(fresh.hiddenIds));
+        setPartnerLastReadAt(fresh.reads.find((r) => r.user_id === partnerId)?.last_read_at ?? null);
+        setPartnerLastDeliveredAt(fresh.deliveries.find((d) => d.user_id === partnerId)?.last_delivered_at ?? null);
+        if (fresh.pet) setPet(fresh.pet);
+        setHasMoreOlder(fresh.messages.length >= PAGE_SIZE);
+        patchCachedChat(coupleId, fresh);
+      })
+      .catch((e) => console.error("fetchLatestChatData failed", e))
+      .finally(() => {
+        if (!cancelled) setInitialLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [coupleId, userId, partnerId]);
 
   // ---- Đánh dấu "đã đọc": lúc mở màn hình + mỗi khi tin mới về và tab đang
   // hiện (không tính là đã đọc nếu app đang ở nền / màn hình khoá). ----
@@ -396,31 +469,105 @@ export default function ChatBox({
       )
       .subscribe();
 
+    // ---- Áp dữ liệu tin nhắn mới nhất vào state, nhưng CHỈ khi thực sự có
+    // gì thay đổi (khác id, khác nội dung/sửa/thu hồi...) — trước đây mỗi
+    // lần poll (hoặc mỗi lần resync khi quay lại từ nền) đều tạo MẢNG MỚI dù
+    // dữ liệu y hệt, khiến toàn bộ danh sách tin nhắn re-render + effect ghi
+    // cache (bên dưới) chạy lại không cần thiết — đây chính là nguyên nhân
+    // gây "đơ/giật" mỗi khi quay lại app: hàng loạt timer bị trình duyệt dồn
+    // lại lúc tab ẩn bắn dồn dập cùng lúc khi hiện lại, cộng dồn với việc
+    // re-render toàn danh sách dù không có gì mới.
+    function applyFreshMessages(fresh: MessageRow[]) {
+      setMessages((prev) => {
+        const pendingOnes = prev.filter((m) => m.pending);
+        const merged = [
+          ...fresh,
+          ...pendingOnes.filter((p) => !fresh.some((d) => d.sender_id === p.sender_id && d.content === p.content)),
+        ];
+        const oldOnes = prev.filter(
+          (m) => !m.pending && !fresh.some((f) => f.id === m.id) && m.created_at < (fresh[0]?.created_at ?? "")
+        );
+        const next = [...oldOnes, ...merged];
+
+        // So sánh nhanh với `prev` (bỏ qua các tin pending vì chúng luôn đổi
+        // tempId) — cùng độ dài + cùng id theo đúng thứ tự + cùng edited_at/
+        // deleted_at thì coi là không đổi, giữ nguyên `prev` để React khỏi
+        // re-render danh sách.
+        if (next.length === prev.length) {
+          const unchanged = next.every((m, i) => {
+            const p = prev[i];
+            return (
+              p &&
+              p.id === m.id &&
+              p.edited_at === m.edited_at &&
+              p.deleted_at === m.deleted_at &&
+              p.content === m.content
+            );
+          });
+          if (unchanged) return prev;
+        }
+        return next;
+      });
+    }
+
     // Poll dự phòng: nếu vì lý do gì đó realtime rớt hoàn toàn, vẫn đảm bảo
     // tin nhắn xuất hiện trong vòng vài giây thay vì phải tự bấm reload.
+    // CHỈ chạy khi tab đang hiện — bỏ qua hoàn toàn lúc app ở nền, tránh dồn
+    // request/cập nhật state khi quay lại (xem ghi chú applyFreshMessages).
     const poll = window.setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
       const { data } = await supabase
         .from("messages")
         .select("*")
         .eq("couple_id", coupleId)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
-      if (data) {
-        const fresh = [...data].reverse();
-        setMessages((prev) => {
-          const pendingOnes = prev.filter((m) => m.pending);
-          const merged = [
-            ...fresh,
-            ...pendingOnes.filter((p) => !fresh.some((d) => d.sender_id === p.sender_id && d.content === p.content)),
-          ];
-          // giữ lại các tin cũ hơn đã được tải qua phân trang, chỉ merge phần đuôi mới nhất
-          const oldOnes = prev.filter((m) => !m.pending && !fresh.some((f) => f.id === m.id) && m.created_at < (fresh[0]?.created_at ?? ""));
-          return [...oldOnes, ...merged];
-        });
-      }
+      if (data) applyFreshMessages([...data].reverse());
     }, 8000);
 
+    // ---- Quay lại từ nền: WebSocket realtime của trình duyệt/webview
+    // thường bị hệ điều hành ngắt sau 1 lúc app chạy nền — supabase-js tự
+    // reconnect nhưng đôi khi "kẹt" (đặc biệt trên webview di động/PWA khi
+    // out app không đóng hẳn). Thay vì chờ, chủ động ép reconnect + đồng bộ
+    // lại 1 lần sạch ngay khi tab hiện trở lại (chỉ 1 lần, không lặp lại
+    // liên tục), để chắc chắn không bị "treo" hiển thị dữ liệu cũ. ----
+    let hiddenAt: number | null = null;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+      // Chỉ coi là "vừa quay lại từ nền" nếu đã ẩn đủ lâu (>3s) — tránh việc
+      // chuyển tab/app qua lại nhanh (vd mở bàn phím, mở picker ảnh) cũng
+      // kích hoạt reconnect không cần thiết.
+      const wasHiddenLongEnough = hiddenAt !== null && Date.now() - hiddenAt > 3000;
+      hiddenAt = null;
+      if (!wasHiddenLongEnough) return;
+
+      try {
+        const isConnected = supabase.realtime.isConnected?.();
+        if (isConnected === false) {
+          supabase.realtime.connect();
+        }
+      } catch {
+        // Không chặn luồng chính nếu bản supabase-js hiện tại không có API
+        // này — resync bằng fetch bên dưới vẫn đảm bảo dữ liệu đúng.
+      }
+
+      supabase
+        .from("messages")
+        .select("*")
+        .eq("couple_id", coupleId)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE)
+        .then(({ data }) => {
+          if (data) applyFreshMessages([...data].reverse());
+        });
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       supabase.removeChannel(channel);
       supabase.removeChannel(petChannel);
       supabase.removeChannel(reactionChannel);
@@ -433,11 +580,49 @@ export default function ChatBox({
     // msg.sender_id !== userId để quyết định gọi markMessagesDelivered.
   }, [coupleId, partnerId, userId]);
 
+  const prevMessageCountRef = useRef(messages.length);
   useEffect(() => {
+    const jump = messages.length - prevMessageCountRef.current;
+    prevMessageCountRef.current = messages.length;
     if (shouldAutoScroll.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Nhảy nhiều hơn 1 tin cùng lúc (vd vừa resync lại toàn bộ sau khi
+      // quay lại app từ nền) thì cuộn tức thì thay vì "smooth" — animate
+      // cuộn 1 khoảng dài ngay lúc trình duyệt còn đang bận dựng lại cả
+      // danh sách là nguyên nhân chính gây cảm giác giật/đơ lúc đó.
+      bottomRef.current?.scrollIntoView({ behavior: jump > 1 ? "auto" : "smooth" });
     }
   }, [messages.length, partnerTyping]);
+
+  // ---- Ghi cache mỗi khi dữ liệu chat thay đổi (tin mới, reaction, ghim,
+  // ẩn tin, đổi mood pet...) — đảm bảo lần SAU vào lại khung chat này (dù
+  // trong cùng phiên) luôn thấy đúng trạng thái mới nhất ngay lập tức, không
+  // cần chờ effect đồng bộ nền chạy xong. Debounce 400ms để không
+  // JSON.stringify + ghi sessionStorage liên tục khi nhiều state đổi dồn dập
+  // cùng lúc (vd nhận nhiều tin liền, hoặc lúc resync sau khi quay lại từ
+  // nền) — đây từng là 1 phần nguyên nhân gây giật khi quay lại app. ----
+  const cacheWriteTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    window.clearTimeout(cacheWriteTimer.current);
+    cacheWriteTimer.current = window.setTimeout(() => {
+      patchCachedChat(coupleId, {
+        messages,
+        reactions: Object.entries(reactions).flatMap(([messageId, byUser]) =>
+          Object.entries(byUser).map(([user_id, emoji]) => ({
+            id: `${messageId}:${user_id}`,
+            message_id: messageId,
+            couple_id: coupleId,
+            user_id,
+            emoji,
+            created_at: new Date().toISOString(),
+          }))
+        ),
+        pins,
+        hiddenIds: Array.from(hiddenIds),
+        pet,
+      });
+    }, 400);
+    return () => window.clearTimeout(cacheWriteTimer.current);
+  }, [coupleId, messages, reactions, pins, hiddenIds, pet]);
 
   // ---- Phân trang: tải thêm tin cũ hơn khi cuộn gần lên đầu danh sách ----
   async function handleScroll() {
@@ -1001,7 +1186,17 @@ export default function ChatBox({
                 <div className="ml-auto h-9 w-1/3 animate-shimmer rounded-2xl rounded-br-md" />
               </div>
             )}
-            {visibleMessages.length === 0 && (
+            {visibleMessages.length === 0 && initialLoading && (
+              // Chỉ hiện khi thật sự chưa có cache nào (lần đầu mở app trong
+              // phiên này) — những lần vào lại sau, cache đã lấp đầy messages
+              // ngay từ đầu nên sẽ không bao giờ rơi vào nhánh này.
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="h-9 w-2/5 animate-shimmer rounded-2xl rounded-bl-md" />
+                <div className="ml-auto h-9 w-1/3 animate-shimmer rounded-2xl rounded-br-md" />
+                <div className="h-9 w-1/2 animate-shimmer rounded-2xl rounded-bl-md" />
+              </div>
+            )}
+            {visibleMessages.length === 0 && !initialLoading && (
               <p className="mt-6 text-center text-xs text-[var(--muted)]">
                 Chưa có tin nhắn nào — nói gì đó với người ấy để bắt đầu giữ chuỗi nhé.
               </p>
