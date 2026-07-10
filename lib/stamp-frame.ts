@@ -1,29 +1,30 @@
 /**
  * Khung "tem bưu chính" (perforated stamp edge) cho tính năng Chụp nhanh.
  *
- * BẢN THIẾT KẾ LẠI (v2) — tham khảo trực tiếp 1 tấm ảnh sưu tập tem cổ thật
- * (hoa lá, tiên nữ, nấm... in trên nền màu pastel, có số hiệu góc, dấu mộc
- * bưu điện, khung viền kép). So với bản cũ, 3 điểm được nâng cấp:
+ * BẢN THIẾT KẾ LẠI (v3) — chuyển sang đúng NGÔN NGỮ THIẾT KẾ của tem bưu
+ * chính THẬT (tham khảo 1 bộ tem thời trang Ý thật: khung mảnh sát ảnh, chữ
+ * hạng mục chạy dọc theo mép trái, tên quốc gia góc trên-phải, mệnh giá góc
+ * dưới-phải, dải viền màu trang trí thuần tuý không chữ ở ngoài cùng), thay
+ * vì phong cách "sticker tem cổ" nhiều hoa văn/hoen ố của bản v2. Khác biệt
+ * chính so với v2:
  *
- *  1. CHẤT GIẤY: trước đây viền chỉ là 1 màu phẳng tuyệt đối — giờ có thêm
- *     vân giấy (paint noise tile hoà trộn multiply), vài đốm "hoen ố" mờ
- *     (foxing, đặc trưng giấy cũ) và 1 lớp vignette rất nhẹ, nên nhìn có
- *     chiều sâu như giấy thật thay vì nền vector phẳng lì.
- *  2. MÀU SẮC THEO ẢNH: trước đây lấy trung bình cộng RGB toàn ảnh — với
- *     ảnh có nhiều vùng màu khác nhau (áo đỏ + tường xanh + da người...),
- *     phép cộng trung bình khiến các hue đối lập triệt tiêu nhau và luôn ra
- *     1 màu nâu xám nhờ nhờ bất kể ảnh gốc là màu gì. Giờ dùng histogram
- *     theo hue (xem extractDominantAccent) để tìm đúng tông màu THỰC SỰ
- *     chiếm ưu thế, giống cách mắt người nhận diện "ảnh này tông xanh lá"
- *     hay "tông cam hoàng hôn".
- *  3. KÝ TỰ/HOA VĂN: thêm khung viền kép (2 nét chỉ mảnh) với hoa văn hình
- *     thoi ở 4 góc, số hiệu kiểu "Nº xx" bằng font serif italic (giống số
- *     mệnh giá tem), và dấu mộc bưu điện tròn có chữ chạy theo cung tròn +
- *     vạch huỷ tem — thay cho số + vòng tròn đơn giản của bản cũ.
+ *  - BỎ khung đôi + hoa văn hình thoi góc, BỎ các đốm "hoen ố" giả cổ →
+ *    thay bằng 1 NÉT KHUNG DUY NHẤT sát mép ảnh (đúng như tem thật: khung
+ *    mảnh ôm sát nội dung, dải màu ngoài khung là trang trí thuần tuý).
+ *  - BỎ dấu mộc bưu điện chữ chạy cung tròn (dấu mộc chỉ xuất hiện trên tem
+ *    ĐÃ QUA SỬ DỤNG, không phải thiết kế gốc của tem) → thay bằng bộ nhãn
+ *    chữ đúng vị trí tem thật: nhãn hạng mục dọc theo mép trái, nhãn ngắn
+ *    góc trên-phải, ngày chụp góc dưới-trái, mệnh giá kiểu "N. xx" góc
+ *    dưới-phải — tất cả đặt trong dải viền màu (không đè lên ảnh người
+ *    dùng, vì ảnh chụp thật không có sẵn "khoảng trống" để đặt chữ như tem
+ *    thương mại được thiết kế sẵn bố cục).
+ *  - Vẫn giữ vân giấy rất nhẹ (in ấn thật cũng có kết cấu giấy) nhưng bỏ lớp
+ *    "hoen ố" vì nó khiến tem nhìn cũ/bẩn thay vì tem mới in sạch sẽ.
  *
- * ---- Cấu trúc 2 lớp giữ nguyên như bản gốc ----
- *  1. Một viền giấy màu (giờ có vân + hoa văn) bao quanh ảnh (addStampBorder)
- *     — răng cưa được cắt vào LỚP VIỀN NÀY, không đụng vào nội dung ảnh.
+ * ---- Cấu trúc 2 lớp giữ nguyên từ các bản trước ----
+ *  1. Một viền giấy màu (lấy tông từ ảnh, xem extractDominantAccent) bao
+ *     quanh ảnh (addStampBorder) — răng cưa cắt vào LỚP VIỀN NÀY, không
+ *     đụng vào nội dung ảnh.
  *  2. Mặt nạ răng cưa (applyStampMask) khoét các lỗ bán nguyệt đều nhau dọc
  *     toàn bộ chu vi của LỚP VIỀN đó.
  *
@@ -47,11 +48,11 @@ export interface Point {
 
 export interface StampAccent {
   /** Màu viền giấy — lấy hue thật từ ảnh (xem extractDominantAccent), vẫn
-   * giữ độ sáng cao + bão hoà vừa phải để đọc như giấy tem chứ không thành
-   * 1 mảng màu phẳng chói mắt. */
+   * giữ độ sáng cao + bão hoà vừa phải để đọc như giấy in tem chứ không
+   * thành 1 mảng màu phẳng chói mắt. */
   border: string;
-  /** Màu "mực" đậm cùng tông, dùng để in số hiệu, hoa văn khung + dấu mộc —
-   * tương phản đủ để đọc được trên nền viền nhạt. */
+  /** Màu "mực" đậm cùng tông, dùng để in khung + các nhãn chữ — tương phản
+   * đủ để đọc được trên nền viền nhạt. */
   ink: string;
 }
 
@@ -80,10 +81,10 @@ function hslToCss(h: number, s: number, l: number): string {
 
 /**
  * Tìm tông màu chủ đạo của ảnh bằng HISTOGRAM THEO HUE, lấy mẫu thưa (mỗi
- * 6px) toàn bộ canvas — thay cho cách cũ (cộng trung bình RGB) vì ảnh thật
- * hầu như luôn có nhiều vùng màu khác nhau cùng lúc (áo, da, nền...); cộng
- * trung bình trực tiếp khiến các hue đối lập triệt tiêu nhau và kết quả gần
- * như luôn ra 1 màu nâu xám bất kể ảnh gốc.
+ * 6px) toàn bộ canvas — thay cho cách cộng trung bình RGB trực tiếp, vì ảnh
+ * thật hầu như luôn có nhiều vùng màu khác nhau cùng lúc (áo, da, nền...);
+ * cộng trung bình trực tiếp khiến các hue đối lập triệt tiêu nhau và kết
+ * quả gần như luôn ra 1 màu nâu xám bất kể ảnh gốc.
  *
  * Cách làm: chia vòng hue 360° thành 24 khoang 15°/khoang, mỗi pixel màu
  * (bỏ qua pixel gần trung tính s<0.12 vì không mang thông tin sắc độ) cộng
@@ -137,18 +138,17 @@ export function extractDominantAccent(photoCanvas: HTMLCanvasElement): StampAcce
   const domSat = hasColor ? binSat[best] / binWeight[best] : 0.12;
   const domLight = hasColor ? binLight[best] / binWeight[best] : 0.7;
 
-  // Viền giấy: chỉ pha 20% về hue kem cố định để giữ chất "giấy cổ", 80%
-  // còn lại giữ đúng hue chủ đạo của ảnh — trước đây pha ngược lại (70%
-  // kem/30% ảnh) nên viền gần như luôn ra cùng 1 màu nâu nhạt bất kể ảnh.
+  // Viền giấy: chỉ pha 20% về hue kem cố định để giữ chất "giấy in", 80%
+  // còn lại giữ đúng hue chủ đạo của ảnh.
   const borderHue = hasColor ? CREAM_HUE * 0.2 + domHue * 0.8 : CREAM_HUE;
   const borderSat = hasColor ? Math.min(0.5, Math.max(0.24, domSat * 0.85)) : 0.13;
   const borderLight = hasColor ? Math.min(0.91, Math.max(0.82, domLight * 0.35 + 0.65)) : 0.93;
   const border = hslToCss(borderHue, borderSat, borderLight);
 
-  // Mực: cùng hue, tăng bão hoà + hạ độ sáng để tương phản, đọc rõ số hiệu
-  // và hoa văn khung trên nền viền nhạt.
+  // Mực: cùng hue, tăng bão hoà + hạ độ sáng để tương phản, đọc rõ các nhãn
+  // chữ và khung trên nền viền nhạt.
   const inkSat = hasColor ? Math.max(0.38, domSat) : 0.16;
-  const ink = hslToCss(domHue, inkSat, 0.26);
+  const ink = hslToCss(domHue, inkSat, 0.24);
 
   return { border, ink };
 }
@@ -174,13 +174,13 @@ export function computeStampPerimeterPoints(
   const period = holeRadius * 2 + gap;
 
   // QUAN TRỌNG: neo 1 lỗ đúng vào MỖI GÓC thay vì lệch pha nửa chu kỳ để
-  // "né" góc như trước. Lý do: khi đi theo chu vi bằng khoảng cách cung
-  // (arc-length) rồi rẽ 90° ở góc, khoảng cách ĐƯỜNG THẲNG thực tế giữa 2 lỗ
-  // liền kề tại góc ngắn hơn hẳn khoảng cách cung — khiến các lỗ quanh góc
-  // nhìn sát/dư hơn các lỗ giữa cạnh thẳng dù "cách đều" theo chu vi.
-  // Neo lỗ vào góc + chia đều riêng cho từng cạnh (từ góc này sang góc kia)
-  // đảm bảo khoảng cách hình học thật giữa mọi lỗ liền kề bằng nhau, kể cả
-  // 2 lỗ nằm 2 bên 1 góc.
+  // "né" góc. Lý do: khi đi theo chu vi bằng khoảng cách cung (arc-length)
+  // rồi rẽ 90° ở góc, khoảng cách ĐƯỜNG THẲNG thực tế giữa 2 lỗ liền kề tại
+  // góc ngắn hơn hẳn khoảng cách cung — khiến các lỗ quanh góc nhìn sát/dư
+  // hơn các lỗ giữa cạnh thẳng dù "cách đều" theo chu vi. Neo lỗ vào góc +
+  // chia đều riêng cho từng cạnh (từ góc này sang góc kia) đảm bảo khoảng
+  // cách hình học thật giữa mọi lỗ liền kề bằng nhau, kể cả 2 lỗ nằm 2 bên
+  // 1 góc.
   const edges: Array<{ length: number; from: Point; dir: Point }> = [
     { length: width, from: { x: 0, y: 0 }, dir: { x: 1, y: 0 } }, // trên
     { length: height, from: { x: width, y: 0 }, dir: { x: 0, y: 1 } }, // phải
@@ -209,23 +209,23 @@ export function defaultHoleRadius(width: number, height: number): number {
   return Math.max(10, Math.round(Math.min(width, height) * 0.04));
 }
 
-/** Độ dày viền giấy trắng ngà bao quanh ảnh trước khi đục răng cưa — cố ý
- * lớn hơn hẳn bán kính lỗ (~1.5x) để lỗ không bao giờ ăn vào nội dung ảnh
- * và phần "thịt" giấy quanh mỗi lỗ đủ dày, nhìn mềm mại thay vì mỏng dính.
- * Cũng cần đủ rộng để chứa khung hoa văn kép + số hiệu + dấu mộc mới. */
+/** Độ dày viền giấy trắng ngà bao quanh ảnh trước khi đục răng cưa. Giảm so
+ * với bản trước (0.12 thay vì 0.15) — phản hồi thực tế cho thấy khoảng
+ * cách từ khung viền tới răng cưa dày hơn cần thiết. Vẫn đủ chỗ cho 4 nhãn
+ * chữ (hạng mục dọc trái, nhãn góc trên-phải, ngày góc dưới-trái, mệnh giá
+ * góc dưới-phải) nhờ cỡ chữ cũng được thu nhỏ tương ứng (xem
+ * decorateStampBorder). */
 export function defaultBorderWidth(width: number, height: number): number {
-  return Math.max(26, Math.round(Math.min(width, height) * 0.13));
+  return Math.max(26, Math.round(Math.min(width, height) * 0.12));
 }
 
 // ---------------------------------------------------------------------
-// Chất giấy: vân giấy + đốm hoen ố + vignette nhẹ
+// Vân giấy in — rất nhẹ, KHÔNG có hiệu ứng "cũ/hoen ố" (tem thật là tem mới
+// in, không phải đồ cổ) — chỉ đủ để dải màu không phẳng lì như vector.
 // ---------------------------------------------------------------------
 
 let noiseTileCache: HTMLCanvasElement | null = null;
 
-/** 1 tile nhiễu xám nhỏ (96x96), dùng làm pattern lặp lại để mô phỏng vân
- * sợi giấy. Cache lại vì tile giống hệt nhau dùng được cho mọi tấm ảnh —
- * không cần sinh nhiễu mới mỗi lần chụp. */
 function getNoiseTile(): HTMLCanvasElement {
   if (noiseTileCache) return noiseTileCache;
   const size = 96;
@@ -236,7 +236,7 @@ function getNoiseTile(): HTMLCanvasElement {
   if (ctx) {
     const imgData = ctx.createImageData(size, size);
     for (let i = 0; i < imgData.data.length; i += 4) {
-      const v = 128 + (Math.random() - 0.5) * 60;
+      const v = 128 + (Math.random() - 0.5) * 40;
       imgData.data[i] = v;
       imgData.data[i + 1] = v;
       imgData.data[i + 2] = v;
@@ -248,274 +248,146 @@ function getNoiseTile(): HTMLCanvasElement {
   return c;
 }
 
-/** RNG tuyến tính đơn giản (LCG) — chỉ cần đủ "trông ngẫu nhiên", không cần
- * chất lượng mật mã. Dùng seed cố định theo từng ảnh để các đốm hoen ố nằm
- * ở vị trí ổn định nếu render lại cùng 1 ảnh, thay vì nhảy lung tung mỗi
- * lần vẽ. */
-function makeSeededRandom(seed: number): () => number {
-  let state = seed >>> 0 || 1;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 4294967296;
-  };
-}
-
-/**
- * Vẽ chất liệu giấy lên TOÀN BỘ khung viền: vân sợi giấy (noise pattern hoà
- * multiply, rất nhẹ), vài đốm "hoen ố" mờ đặc trưng giấy cũ, và 1 lớp
- * vignette nhẹ hướng ra mép ngoài để tấm ảnh có chiều sâu vật lý thay vì
- * nhìn phẳng lì như 1 hình chữ nhật vector tô màu.
- */
-function paintPaperTexture(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  ink: string,
-  seed: number
-) {
-  ctx.save();
+function paintPrintTexture(ctx: CanvasRenderingContext2D, width: number, height: number) {
   const tile = getNoiseTile();
   const pattern = ctx.createPattern(tile, "repeat");
-  if (pattern) {
-    ctx.globalAlpha = 0.05;
-    ctx.globalCompositeOperation = "multiply";
-    ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, width, height);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
-  }
-  ctx.restore();
-
-  const rand = makeSeededRandom(seed);
-  const spotCount = 5;
-  for (let i = 0; i < spotCount; i++) {
-    const x = rand() * width;
-    const y = rand() * height;
-    const r = (0.06 + rand() * 0.1) * Math.min(width, height);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, ink);
-    g.addColorStop(1, "transparent");
-    ctx.save();
-    ctx.globalAlpha = 0.035 + rand() * 0.02;
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  const vign = ctx.createRadialGradient(
-    width / 2, height / 2, Math.min(width, height) * 0.35,
-    width / 2, height / 2, Math.max(width, height) * 0.72
-  );
-  vign.addColorStop(0, "rgba(0,0,0,0)");
-  vign.addColorStop(1, ink);
+  if (!pattern) return;
   ctx.save();
-  ctx.globalAlpha = 0.05;
-  ctx.fillStyle = vign;
+  ctx.globalAlpha = 0.035;
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, width, height);
   ctx.restore();
 }
 
 // ---------------------------------------------------------------------
-// Khung hoa văn kép + hoạ tiết hình thoi góc (gợi nhớ khung chạm khắc tem)
+// Khung — MỘT nét mảnh duy nhất sát mép ảnh, đúng cấu trúc tem thật (dải
+// màu ngoài khung là trang trí thuần tuý, không có hoa văn hay nét phụ).
 // ---------------------------------------------------------------------
 
-function drawOrnateFrame(
+function drawFrameRule(
   ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  borderWidth: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
   ink: string
 ) {
-  const outerInset = borderWidth * 0.42;
-  const innerInset = borderWidth * 0.58;
-
   ctx.save();
   ctx.strokeStyle = ink;
-  ctx.globalAlpha = 0.55;
-  ctx.lineWidth = Math.max(1, borderWidth * 0.028);
-  ctx.strokeRect(outerInset, outerInset, width - outerInset * 2, height - outerInset * 2);
-
-  ctx.globalAlpha = 0.4;
-  ctx.lineWidth = Math.max(1, borderWidth * 0.02);
-  ctx.strokeRect(innerInset, innerInset, width - innerInset * 2, height - innerInset * 2);
-  ctx.restore();
-
-  // Hoạ tiết hình thoi nhỏ tại 4 góc của nét trong — giống hoa văn chạm góc
-  // thường thấy trên khung tem khắc cổ điển.
-  const d = borderWidth * 0.16;
-  const corners: Point[] = [
-    { x: innerInset, y: innerInset },
-    { x: width - innerInset, y: innerInset },
-    { x: innerInset, y: height - innerInset },
-    { x: width - innerInset, y: height - innerInset },
-  ];
-  ctx.save();
-  ctx.fillStyle = ink;
-  ctx.globalAlpha = 0.6;
-  for (const { x: cx, y: cy } of corners) {
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(Math.PI / 4);
-    ctx.fillRect(-d / 2, -d / 2, d, d);
-    ctx.restore();
-  }
+  ctx.globalAlpha = 0.85;
+  ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.006);
+  ctx.strokeRect(x, y, w, h);
   ctx.restore();
 }
 
 // ---------------------------------------------------------------------
-// Chữ chạy theo cung tròn — dùng cho dấu mộc bưu điện
+// Nhãn chữ — bố cục lấy đúng từ giải phẫu tem thật: chữ hạng mục chạy dọc
+// theo mép trái (đọc từ dưới lên), nhãn ngắn góc trên-phải, mệnh giá góc
+// dưới-phải. Đặt trong DẢI VIỀN MÀU quanh ảnh (không đè lên ảnh người dùng
+// — khác với tem thương mại vốn được thiết kế sẵn khoảng trống cho chữ,
+// ảnh chụp thật không có khoảng trống đó nên đè chữ lên sẽ che mất nội
+// dung ảnh và khó đọc do nền ảnh không kiểm soát được).
+//
+// Canvas không có letter-spacing gốc nên các hàm dưới tự tính khoảng cách
+// giữa từng ký tự và vẽ rời — cho hiệu ứng "chữ hoa dãn cách" đặc trưng của
+// nhãn tem thay vì set-width mặc định của font.
 // ---------------------------------------------------------------------
 
-/**
- * Vẽ `text` chạy dọc theo 1 cung tròn tâm (cx, cy) bán kính `radius`.
- * `centerAngle` là góc (radian, 0 = hướng 12 giờ, tăng dần theo chiều kim
- * đồng hồ) tại điểm giữa của dòng chữ.
- *
- * `upright=true` dùng cho chữ nằm ở NỬA DƯỚI vòng tròn (quanh centerAngle=π):
- * nếu không xử lý, chữ ở nửa dưới sẽ bị lộn ngược (vì xoay theo đúng góc cực
- * tại đó ~180°). Cách sửa: đi ngược chiều (dir=-1) và xoay thêm π cho mỗi
- * ký tự — kết quả là chữ vẫn đọc xuôi trái sang phải, không bị úp ngược.
- */
-function drawArcText(
+function drawVerticalLabel(
   ctx: CanvasRenderingContext2D,
   text: string,
   cx: number,
   cy: number,
-  radius: number,
-  centerAngle: number,
-  opts: { color: string; fontPx: number; upright?: boolean; spacing?: number }
+  fontPx: number,
+  ink: string
 ) {
-  const { color, fontPx, upright = false, spacing = 0.05 } = opts;
   ctx.save();
-  ctx.fillStyle = color;
-  ctx.font = `600 ${fontPx}px Georgia, "Times New Roman", serif`;
+  ctx.translate(cx, cy);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.82;
+  ctx.font = `600 ${fontPx}px "Helvetica Neue", Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  const dir = upright ? -1 : 1;
-  const rotAdj = upright ? Math.PI : 0;
+  const spacing = fontPx * 0.22;
   const chars = Array.from(text);
-  const angles = chars.map((ch) => ctx.measureText(ch).width / radius + spacing);
-  const total = angles.reduce((a, b) => a + b, 0);
-
-  let a = centerAngle - dir * total / 2;
+  const widths = chars.map((ch) => ctx.measureText(ch).width);
+  const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+  let x = -total / 2;
   for (let i = 0; i < chars.length; i++) {
-    const half = angles[i] / 2;
-    const mid = a + dir * half;
-    const x = cx + radius * Math.sin(mid);
-    const y = cy - radius * Math.cos(mid);
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(mid + rotAdj);
-    ctx.fillText(chars[i], 0, 0);
-    ctx.restore();
-    a += dir * angles[i];
+    ctx.fillText(chars[i], x + widths[i] / 2, 0);
+    x += widths[i] + spacing;
   }
   ctx.restore();
 }
 
-/**
- * Dấu mộc bưu điện: 2 vòng tròn đồng tâm, chữ chạy theo cung trên + cung
- * dưới (mặc định: nhãn cố định ở trên, ngày chụp ở dưới), 1 ngôi sao nhỏ ở
- * vị trí 3 giờ/9 giờ ngăn cách 2 dòng chữ, và vài vạch huỷ tem xiên qua tâm
- * — mô phỏng đúng cấu trúc dấu mộc bưu điện thật (địa danh + ngày + vạch
- * huỷ) thay vì 1 vòng tròn chấm chấm đơn giản như bản cũ.
- */
-function drawPostmark(
+function drawLabelTag(
   ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  r: number,
+  text: string,
+  x: number,
+  y: number,
+  fontPx: number,
   ink: string,
-  topLabel: string,
-  bottomLabel: string
+  align: "left" | "right"
 ) {
   ctx.save();
-  ctx.strokeStyle = ink;
-  ctx.globalAlpha = 0.7;
-  ctx.lineWidth = Math.max(1, r * 0.045);
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.74, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-
-  drawArcText(ctx, topLabel, cx, cy, r * 0.87, 0, { color: ink, fontPx: r * 0.26 });
-  drawArcText(ctx, bottomLabel, cx, cy, r * 0.87, Math.PI, { color: ink, fontPx: r * 0.24, upright: true });
-
-  ctx.save();
   ctx.fillStyle = ink;
-  ctx.globalAlpha = 0.7;
-  for (const ang of [Math.PI / 2, -Math.PI / 2]) {
-    const x = cx + r * 0.87 * Math.sin(ang);
-    const y = cy - r * 0.87 * Math.cos(ang);
-    ctx.beginPath();
-    const spikes = 4, outerR = r * 0.07, innerR = r * 0.03;
-    for (let i = 0; i < spikes * 2; i++) {
-      const rad = i % 2 === 0 ? outerR : innerR;
-      const a2 = (Math.PI / spikes) * i - Math.PI / 2;
-      const px = x + rad * Math.cos(a2), py = y + rad * Math.sin(a2);
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // Vạch huỷ tem xiên qua tâm, giống dấu mộc thật đóng đè lên tem đã dùng.
-  ctx.save();
-  ctx.strokeStyle = ink;
-  ctx.globalAlpha = 0.22;
-  ctx.lineWidth = Math.max(1, r * 0.035);
-  for (const ang of [-0.35, -0.1, 0.15, 0.4]) {
-    ctx.beginPath();
-    ctx.moveTo(cx - r * 1.15 * Math.cos(ang), cy - r * 1.15 * Math.sin(ang));
-    ctx.lineTo(cx + r * 1.15 * Math.cos(ang), cy + r * 1.15 * Math.sin(ang));
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-/**
- * Số hiệu góc trên-trái kiểu "Nº xx" — tiền tố "Nº" bằng serif in nghiêng
- * nhỏ phía trên, số chính bằng serif đậm lớn hơn phía dưới, cùng 3 chấm hoa
- * văn ngay dưới số (giống các gạch chấm trang trí dưới mệnh giá tem cổ).
- * Đẹp và có "ký tự" rõ ràng hơn hẳn 1 con số trần trụi của bản cũ.
- */
-function drawCornerNumeral(
-  ctx: CanvasRenderingContext2D,
-  borderWidth: number,
-  ink: string,
-  seed: number
-) {
-  const inset = borderWidth * 0.52;
-  const value = String(10 + (seed % 89)).padStart(2, "0");
-
-  ctx.save();
-  ctx.fillStyle = ink;
-  ctx.globalAlpha = 0.92;
+  ctx.globalAlpha = 0.85;
+  ctx.font = `700 ${fontPx}px "Helvetica Neue", Arial, sans-serif`;
   ctx.textBaseline = "alphabetic";
+
+  const spacing = fontPx * 0.14;
+  const chars = Array.from(text);
+  const widths = chars.map((ch) => ctx.measureText(ch).width);
+  const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+  const startX = align === "right" ? x - total : x;
+
   ctx.textAlign = "left";
-
-  const prefixPx = borderWidth * 0.26;
-  const numPx = borderWidth * 0.6;
-  ctx.font = `italic 500 ${prefixPx}px Georgia, serif`;
-  ctx.fillText("Nº", inset * 0.62, inset * 0.62 + prefixPx * 0.4);
-
-  ctx.font = `700 ${numPx}px Georgia, "Times New Roman", serif`;
-  ctx.fillText(value, inset * 0.62, inset * 0.62 + prefixPx * 0.5 + numPx * 0.86);
-
-  const dotY = inset * 0.62 + prefixPx * 0.5 + numPx * 0.86 + numPx * 0.14;
-  const dotR = numPx * 0.045;
-  for (const dx of [-0.14, 0, 0.14]) {
-    ctx.beginPath();
-    ctx.arc(inset * 0.62 + numPx * 0.55 + dx * numPx, dotY, dotR, 0, Math.PI * 2);
-    ctx.fill();
+  let cx = startX;
+  for (let i = 0; i < chars.length; i++) {
+    ctx.fillText(chars[i], cx, y);
+    cx += widths[i] + spacing;
   }
+  ctx.restore();
+}
+
+interface DenominationSpec {
+  symbol: string;
+  symbolPx: number;
+  number: string;
+  numPx: number;
+  gap: number;
+}
+
+/** Mệnh giá góc dưới-phải kiểu "N. xx" — tiền tố nhỏ bằng serif thường +
+ * số chính đậm lớn hơn, đúng tỉ lệ 2 cỡ chữ như "€ 0,41" trên tem thật. */
+function drawDenomination(
+  ctx: CanvasRenderingContext2D,
+  value: DenominationSpec,
+  x: number,
+  y: number,
+  ink: string,
+  align: "left" | "right"
+) {
+  ctx.save();
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.9;
+  ctx.textBaseline = "alphabetic";
+
+  ctx.font = `400 ${value.symbolPx}px Georgia, serif`;
+  const symbolW = ctx.measureText(value.symbol).width;
+  ctx.font = `700 ${value.numPx}px Georgia, "Times New Roman", serif`;
+  const numW = ctx.measureText(value.number).width;
+  const total = symbolW + value.gap + numW;
+
+  const startX = align === "right" ? x - total : x;
+  ctx.textAlign = "left";
+  ctx.font = `400 ${value.symbolPx}px Georgia, serif`;
+  ctx.fillText(value.symbol, startX, y);
+  ctx.font = `700 ${value.numPx}px Georgia, "Times New Roman", serif`;
+  ctx.fillText(value.number, startX + symbolW + value.gap, y);
   ctx.restore();
 }
 
@@ -621,10 +493,11 @@ export function applyStampMask(sourceCanvas: HTMLCanvasElement, holeRadius?: num
 }
 
 /**
- * Vẽ toàn bộ hoạ tiết trang trí lên viền giấy đã bo màu: chất giấy (vân +
- * hoen ố + vignette), khung hoa văn kép, số hiệu góc "Nº xx", và dấu mộc
- * bưu điện tròn ở góc dưới-phải. Tách riêng khỏi buildStampPhoto() để dễ
- * test/điều chỉnh từng phần mà không đụng vào luồng bake chính.
+ * Vẽ toàn bộ hoạ tiết + nhãn chữ lên viền giấy đã bo màu: vân giấy in nhẹ,
+ * khung 1 nét sát mép ảnh, nhãn hạng mục chạy dọc mép trái, nhãn ngắn góc
+ * trên-phải, ngày chụp góc dưới-trái, và mệnh giá "N. xx" góc dưới-phải.
+ * Tách riêng khỏi buildStampPhoto() để dễ test/điều chỉnh từng phần mà
+ * không đụng vào luồng bake chính.
  */
 function decorateStampBorder(
   ctx: CanvasRenderingContext2D,
@@ -633,35 +506,74 @@ function decorateStampBorder(
   borderWidth: number,
   accent: StampAccent,
   seed: number,
-  dateLabel: string
+  dateLabel: string,
+  cornerLabel: string,
+  categoryLabel: string
 ) {
-  paintPaperTexture(ctx, width, height, accent.ink, seed);
-  drawOrnateFrame(ctx, width, height, borderWidth, accent.ink);
-  drawCornerNumeral(ctx, borderWidth, accent.ink, seed);
+  paintPrintTexture(ctx, width, height);
 
-  const r = borderWidth * 0.42;
-  const cx = width - borderWidth * 0.62;
-  const cy = height - borderWidth * 0.62;
-  drawPostmark(ctx, cx, cy, r, accent.ink, "KHOẢNH KHẮC", dateLabel);
+  const photoW = width - borderWidth * 2;
+  const photoH = height - borderWidth * 2;
+  // frameGap tính từ mép ảnh: đẩy khung ra xa ảnh hơn 1 chút (0.4 thay vì
+  // 0.22) để phần dải màu NGOÀI khung (khoảng cách khung → răng cưa) hẹp
+  // lại tương ứng — đây chính là phần người dùng phản hồi là "dày quá".
+  const frameGap = borderWidth * 0.4;
+  drawFrameRule(
+    ctx,
+    borderWidth - frameGap,
+    borderWidth - frameGap,
+    photoW + frameGap * 2,
+    photoH + frameGap * 2,
+    accent.ink
+  );
+
+  // Cỡ chữ nhãn thu nhỏ theo tỉ lệ (0.10 thay vì 0.13) để khớp với dải viền
+  // giờ đã hẹp hơn — vẫn đủ lớn để đọc rõ, không bị tràn ra ngoài dải màu.
+  drawVerticalLabel(ctx, categoryLabel, borderWidth * 0.42, height / 2, borderWidth * 0.1, accent.ink);
+  drawLabelTag(ctx, cornerLabel, width - borderWidth * 0.42, borderWidth * 0.58, borderWidth * 0.1, accent.ink, "right");
+  drawLabelTag(ctx, dateLabel, borderWidth * 0.42, height - borderWidth * 0.32, borderWidth * 0.1, accent.ink, "left");
+
+  const value = 10 + (seed % 89);
+  drawDenomination(
+    ctx,
+    {
+      symbol: "N.",
+      symbolPx: borderWidth * 0.16,
+      number: String(value).padStart(2, "0"),
+      numPx: borderWidth * 0.28,
+      gap: borderWidth * 0.03,
+    },
+    width - borderWidth * 0.42,
+    height - borderWidth * 0.3,
+    accent.ink,
+    "right"
+  );
 }
 
-/** Định dạng ngày kiểu dấu mộc bưu điện (dd · MM), dùng ngày hệ thống hiện
- * tại của thiết bị lúc bake ảnh — đúng như con tem thật luôn đóng dấu ngày
- * gửi thư. */
-function formatPostmarkDate(date: Date): string {
+/** Định dạng ngày kiểu nhãn tem (dd · MM), dùng ngày hệ thống hiện tại của
+ * thiết bị lúc bake ảnh. */
+function formatStampDate(date: Date): string {
   const dd = String(date.getDate()).padStart(2, "0");
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   return `${dd} · ${mm}`;
 }
 
 /**
- * Tiện ích gộp các bước: bọc viền giấy màu (lấy tông từ ảnh) + phủ chất
- * giấy + khung hoa văn + số hiệu + dấu mộc + đục răng cưa — dùng trong
+ * Tiện ích gộp các bước: bọc viền giấy màu (lấy tông từ ảnh) + phủ vân giấy
+ * + khung + nhãn chữ + mệnh giá + đục răng cưa — dùng trong
  * InstantCapture.tsx ngay sau khi chụp xong 1 khung hình.
  */
 export function buildStampPhoto(
   photoCanvas: HTMLCanvasElement,
-  options?: { borderWidth?: number; holeRadius?: number; borderColor?: string; seed?: number; date?: Date }
+  options?: {
+    borderWidth?: number;
+    holeRadius?: number;
+    borderColor?: string;
+    seed?: number;
+    date?: Date;
+    cornerLabel?: string;
+    categoryLabel?: string;
+  }
 ): HTMLCanvasElement {
   const bw = options?.borderWidth ?? defaultBorderWidth(photoCanvas.width, photoCanvas.height);
   const accent = extractDominantAccent(photoCanvas);
@@ -669,7 +581,17 @@ export function buildStampPhoto(
   const ctx = bordered.getContext("2d");
   const seed = options?.seed ?? Date.now();
   if (ctx) {
-    decorateStampBorder(ctx, bordered.width, bordered.height, bw, accent, seed, formatPostmarkDate(options?.date ?? new Date()));
+    decorateStampBorder(
+      ctx,
+      bordered.width,
+      bordered.height,
+      bw,
+      accent,
+      seed,
+      formatStampDate(options?.date ?? new Date()),
+      options?.cornerLabel ?? "INSTANT",
+      options?.categoryLabel ?? "CANDID MOMENTS"
+    );
   }
   return applyStampMask(bordered, options?.holeRadius ?? defaultHoleRadius(bordered.width, bordered.height));
 }
