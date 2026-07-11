@@ -27,6 +27,14 @@ export interface StoredShot {
    * set thì mặc định coi là "session" để tương thích ngược với dữ liệu cũ
    * đã lưu trước khi có field này. */
   source?: "session" | "chat";
+  /** BẮT BUỘC lọc theo đúng user đang đăng nhập — IndexedDB lưu theo DOMAIN
+   * (origin), không phải theo tài khoản. Nếu 2 người dùng chung 1 trình
+   * duyệt/thiết bị (rất phổ biến lúc test 2 tài khoản trên cùng máy), thiếu
+   * field này thì ảnh nháp của người này sẽ hiện lẫn sang người kia — đúng
+   * bug người dùng báo "user 2 lại thấy 10 ảnh của user 1". Optional để
+   * tương thích ngược với dữ liệu cũ đã lưu trước khi có field này (dữ liệu
+   * cũ đó sẽ bị lọc bỏ luôn, coi như của user khác — an toàn hơn là lẫn lộn). */
+  userId?: string;
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -77,16 +85,18 @@ export async function deleteDraftShots(ids: string[]): Promise<void> {
   db.close();
 }
 
-export async function clearDraftShots(source: "session" | "chat" = "session"): Promise<void> {
-  const ids = (await listDraftShots(source)).map((s) => s.id);
+export async function clearDraftShots(userId: string, source: "session" | "chat" = "session"): Promise<void> {
+  const ids = (await listDraftShots(userId, source)).map((s) => s.id);
   if (ids.length === 0) return;
   await deleteDraftShots(ids);
 }
 
 /** Sắp xếp cũ -> mới (thứ tự chụp) để hiện đúng thứ tự trong lưới. Truyền
- * `source` để chỉ lấy đúng ảnh nháp của luồng đó (2 luồng chụp dùng chung 1
- * IndexedDB nhưng không muốn ảnh nháp của luồng này lẫn vào luồng kia). */
-export async function listDraftShots(source: "session" | "chat" = "session"): Promise<StoredShot[]> {
+ * `userId` để CHỈ lấy đúng ảnh nháp của người đang đăng nhập (xem ghi chú ở
+ * field `userId` trong StoredShot phía trên) và `source` để chỉ lấy đúng
+ * ảnh nháp của luồng đó (2 luồng chụp dùng chung 1 IndexedDB nhưng không
+ * muốn ảnh nháp của luồng này lẫn vào luồng kia). */
+export async function listDraftShots(userId: string, source: "session" | "chat" = "session"): Promise<StoredShot[]> {
   const db = await openDb();
   const shots = await new Promise<StoredShot[]>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
@@ -96,6 +106,6 @@ export async function listDraftShots(source: "session" | "chat" = "session"): Pr
   });
   db.close();
   return shots
-    .filter((s) => (s.source ?? "session") === source)
+    .filter((s) => (s.source ?? "session") === source && s.userId === userId)
     .sort((a, b) => a.createdAt - b.createdAt);
 }

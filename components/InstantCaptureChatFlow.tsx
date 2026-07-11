@@ -35,10 +35,14 @@ import { listDraftShots, saveDraftShot, deleteDraftShot, deleteDraftShots } from
 type Step = "camera" | "gallery";
 
 export default function InstantCaptureChatFlow({
+  userId,
   onSend,
   onClose,
   sending,
 }: {
+  /** Lọc đúng ảnh nháp của người đang đăng nhập — xem ghi chú field userId
+   * trong lib/instant-shots-store.ts. */
+  userId: string;
   /** ChatBox tự lo việc hiện bong bóng tạm + upload + gọi sendStampPhoto cho
    * từng ảnh đã chọn — xem handleStampCaptureMulti trong ChatBox.tsx. */
   onSend: (shots: CapturedShot[]) => void | Promise<void>;
@@ -52,7 +56,7 @@ export default function InstantCaptureChatFlow({
   // ngay khi mở camera lên — xem giải thích ở comment đầu file.
   useEffect(() => {
     let cancelled = false;
-    listDraftShots("chat").then((stored) => {
+    listDraftShots(userId, "chat").then((stored) => {
       if (cancelled) return;
       setShots((prev) =>
         prev.length > 0
@@ -63,7 +67,7 @@ export default function InstantCaptureChatFlow({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   function handleShot(shot: CapturedShot) {
     setShots((prev) => [...prev, shot]);
@@ -74,6 +78,7 @@ export default function InstantCaptureChatFlow({
       height: shot.height,
       createdAt: Date.now(),
       source: "chat",
+      userId,
     }).catch((e) => console.error("Lưu ảnh nháp thất bại", e));
   }
 
