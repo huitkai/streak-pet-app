@@ -130,7 +130,7 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="safe-top relative z-20 flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)]/95 px-2.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] backdrop-blur-sm">
+      <header className="safe-top relative z-20 flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)]/95 px-2.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] backdrop-blur-sm">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"

@@ -22,6 +22,20 @@ const DB_VERSION = 1;
  * dọn trước khi vượt ngưỡng (LRU đơn giản theo thời điểm truy cập gần nhất). */
 const MAX_ENTRIES = 300;
 
+/** Bộ nhớ đệm ĐỒNG BỘ (sống trong phiên hiện tại) — sau lần đầu 1 ảnh được
+ * xác nhận có trong IndexedDB, object URL của nó được giữ luôn ở đây. Nhờ
+ * vậy, khi component hiển thị lại ảnh đó (vd thoát khung chat rồi vào lại)
+ * có thể lấy ngay LẬP TỨC mà không cần chờ round-trip IndexedDB bất đồng bộ
+ * — tránh đúng lỗi "đang hiện ảnh bình thường rồi tự nhiên đổi src giữa
+ * chừng" từng gây giật layout/scroll khi mới thêm cache ảnh. */
+const resolvedUrlMemo = new Map<string, string>();
+
+/** Tra cứu đồng bộ — dùng trong lazy state initializer để không có độ trễ
+ * nào giữa lần render đầu tiên và ảnh cục bộ đã biết trước đó. */
+export function getMemoCachedImageUrl(remoteUrl: string): string | null {
+  return resolvedUrlMemo.get(remoteUrl) ?? null;
+}
+
 interface CachedImageRecord {
   url: string;
   blob: Blob;
@@ -100,14 +114,18 @@ export async function getOrCacheImage(remoteUrl: string): Promise<string | null>
       // Cập nhật lastAccessed (không cần chờ) để LRU luôn phản ánh đúng ảnh
       // nào đang thực sự được xem lại.
       void putRecord({ ...existing, lastAccessed: Date.now() });
-      return URL.createObjectURL(existing.blob);
+      const url = URL.createObjectURL(existing.blob);
+      resolvedUrlMemo.set(remoteUrl, url);
+      return url;
     }
 
     const res = await fetch(remoteUrl);
     if (!res.ok) return null;
     const blob = await res.blob();
     await putRecord({ url: remoteUrl, blob, lastAccessed: Date.now() });
-    return URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    resolvedUrlMemo.set(remoteUrl, url);
+    return url;
   } catch {
     return null;
   }

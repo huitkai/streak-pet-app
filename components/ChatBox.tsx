@@ -27,7 +27,7 @@ import {
 import { decodeMessage, encodeImage, encodeStampPhoto, shouldShowTimeDivider } from "@/lib/message-format";
 import { getCachedChat, patchCachedChat } from "@/lib/chat-cache";
 import { fetchLatestChatData } from "@/lib/chat-client-data";
-import { getOrCacheImage } from "@/lib/message-image-cache";
+import { getOrCacheImage, getMemoCachedImageUrl } from "@/lib/message-image-cache";
 import TimeText from "@/components/TimeText";
 import { StickerArt, type StickerId } from "@/components/Stickers";
 import StickerPicker from "@/components/StickerPicker";
@@ -128,38 +128,45 @@ function MessageImage({
   aspectRatio,
   className = "",
   imgClassName = "",
+  onSettled,
 }: {
   src: string;
   alt: string;
   aspectRatio?: string;
   className?: string;
   imgClassName?: string;
+  /** Gọi khi ảnh đã hiện xong (dù từ cache hay tải mới) — ChatBox dùng để
+   * cuộn lại xuống cuối nếu vẫn đang ở chế độ tự cuộn, phòng trường hợp ảnh
+   * tải/đổi kích thước SAU khi lần cuộn ban đầu đã chạy (xem prop này được
+   * truyền từ nơi gọi). */
+  onSettled?: () => void;
 }) {
   const [loaded, setLoaded] = useState(false);
   // ---- Cache ảnh cục bộ (IndexedDB, xem lib/message-image-cache.ts): ảnh
   // đã từng xem sẽ hiện lại TỨC THÌ từ đĩa cục bộ ở mọi lần vào lại khung
   // chat sau này, không phụ thuộc HTTP cache của trình duyệt/webview (vốn có
-  // thể bị hệ điều hành dọn bất cứ lúc nào, đúng nguyên nhân "thoát ra vào
-  // lại phải tải lại ảnh" người dùng gặp phải). Trong lúc chưa có trong
-  // cache, vẫn dùng thẳng `src` gốc để không trễ hiển thị lần xem đầu tiên. ----
-  const [resolvedSrc, setResolvedSrc] = useState(src);
-  const objectUrlRef = useRef<string | null>(null);
+  // thể bị hệ điều hành dọn bất cứ lúc nào).
+  //
+  // QUAN TRỌNG — tránh lặp lại lỗi "ảnh đang hiện bình thường tự nhiên đổi
+  // src giữa chừng" (từng gây giật layout khiến cuộn xuống tin mới nhất bị
+  // dừng lại giữa chừng): nếu bộ nhớ đệm ĐỒNG BỘ (getMemoCachedImageUrl) đã
+  // biết ảnh này từ trước trong phiên hiện tại, dùng luôn ngay từ lần render
+  // đầu tiên — KHÔNG có bước đổi src nào cả. Chỉ khi ảnh này hoàn toàn chưa
+  // từng được cache (lần đầu xem trong phiên) mới hiện thẳng `src` gốc rồi
+  // âm thầm tải+lưu cache ở NỀN cho lần sau — không đụng vào src đang hiển
+  // thị của lần xem hiện tại nữa.
+  const [resolvedSrc] = useState(() => getMemoCachedImageUrl(src) ?? src);
 
   useEffect(() => {
+    if (getMemoCachedImageUrl(src)) return; // đã có sẵn từ state init, không cần làm gì thêm
     let cancelled = false;
-    setLoaded(false);
-    setResolvedSrc(src);
-    getOrCacheImage(src).then((cachedUrl) => {
-      if (cancelled || !cachedUrl) return;
-      objectUrlRef.current = cachedUrl;
-      setResolvedSrc(cachedUrl);
+    getOrCacheImage(src).then(() => {
+      // Chỉ ghi vào cache cho LẦN SAU — cố tình KHÔNG setState đổi src ở đây
+      // để không làm gián đoạn/giật ảnh đang hiển thị của lần xem hiện tại.
+      void cancelled;
     });
     return () => {
       cancelled = true;
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
     };
   }, [src]);
 
@@ -172,7 +179,10 @@ function MessageImage({
         src={resolvedSrc}
         alt={alt}
         loading="lazy"
-        onLoad={() => setLoaded(true)}
+        onLoad={() => {
+          setLoaded(true);
+          onSettled?.();
+        }}
         style={aspectRatio ? { aspectRatio } : undefined}
         className={`${imgClassName} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
       />
@@ -271,6 +281,17 @@ export default function ChatBox({
   const longPressFiredRef = useRef(false);
   const pointerHeldRef = useRef(false);
   const shouldAutoScroll = useRef(true);
+  /** Ảnh trong khung chat (đặc biệt ảnh chụp nhanh/stamp) có thể tải/đổi
+   * kích thước SAU KHI lần cuộn-xuống-cuối ban đầu đã chạy xong — nếu không
+   * bù lại, vị trí cuộn coi như "bị bỏ lại giữa chừng" dù thực ra tin mới
+   * nhất vẫn đã có trong danh sách, chỉ là ảnh của nó chưa kịp hiện. Mỗi khi
+   * 1 ảnh "settle" xong (dù từ cache hay tải mới) mà vẫn đang ở chế độ tự
+   * cuộn thì cuộn lại 1 lần nữa (tức thì, không animate để khỏi giật thêm). */
+  function handleImageSettled() {
+    if (shouldAutoScroll.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "auto" });
+    }
+  }
   const swipeStartRef = useRef<{ x: number; y: number; id: string; pointerId: number } | null>(null);
   const swipeAxisRef = useRef<"none" | "horizontal" | "vertical">("none");
 
@@ -1237,7 +1258,7 @@ export default function ChatBox({
                     style={{ touchAction: "pan-y" }}
                   >
                     <div
-                      className="relative flex min-w-0 items-end gap-1.5"
+                      className="relative flex min-w-0 max-w-[78%] items-end gap-1.5"
                       style={{
                         transform: swipeState?.id === m.id ? `translateX(${swipeState.dx}px)` : undefined,
                         transition: swipeState?.id === m.id ? "none" : "transform 150ms ease-out",
@@ -1268,7 +1289,7 @@ export default function ChatBox({
                         </div>
                       )}
 
-                      <div className={`relative max-w-[78%] rounded-2xl transition-shadow ${highlighted ? "ring-2 ring-[var(--brand)]" : ""}`}>
+                      <div className={`relative max-w-full rounded-2xl transition-shadow ${highlighted ? "ring-2 ring-[var(--brand)]" : ""}`}>
                       {pickerOpenHere && (
                         <>
                           {/* Khi dock đã mở, dock tự có lớp nền riêng để đóng cả hai —
@@ -1363,6 +1384,7 @@ export default function ChatBox({
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
                               className="max-h-72 w-full bg-black/5"
                               imgClassName="max-h-72 w-full object-cover"
+                              onSettled={handleImageSettled}
                             />
                             {m.pending && (
                               <span className="absolute inset-0 flex items-center justify-center bg-black/25">
@@ -1409,6 +1431,7 @@ export default function ChatBox({
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : "4 / 5"}
                               className="relative w-full"
                               imgClassName="w-full object-contain"
+                              onSettled={handleImageSettled}
                             />
                             {m.pending && (
                               <span className="absolute inset-0 flex items-center justify-center">
@@ -1442,6 +1465,7 @@ export default function ChatBox({
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
                               className="max-h-72 w-full bg-black/5"
                               imgClassName="max-h-72 w-full object-cover"
+                              onSettled={handleImageSettled}
                             />
                             <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white">
                               GIF
