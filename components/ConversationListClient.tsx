@@ -41,9 +41,9 @@ export default function ConversationListClient({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+      <header className="glass-surface-strong flex items-center justify-between gap-2 border-b px-4 py-3 shadow-glass safe-top">
         {searchOpen ? (
-          <div className="flex flex-1 items-center gap-2">
+          <div className="flex flex-1 items-center gap-2 rounded-full bg-black/[0.04] px-3 py-2">
             <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
             <input
               autoFocus
@@ -59,24 +59,24 @@ export default function ConversationListClient({
                 setQuery("");
               }}
               aria-label="Đóng tìm kiếm"
-              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90 active:bg-black/5"
+              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90 active:bg-black/10"
             >
               <XIcon className="h-4 w-4" />
             </button>
           </div>
         ) : (
           <>
-            <span className="font-serif text-[22px] italic tracking-tight text-[var(--foreground)] md:hidden">
+            <span className="gradient-text text-[22px] font-extrabold tracking-tight md:hidden">
               Streak&nbsp;Pet
             </span>
-            <h1 className="hidden text-xl font-bold text-[var(--foreground)] md:block">Tin nhắn</h1>
+            <h1 className="gradient-text hidden text-xl font-extrabold md:block">Tin nhắn</h1>
             <div className="flex items-center gap-1">
               {conversations.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Tìm hội thoại"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5 md:hidden"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/10 md:hidden"
                 >
                   <SearchIcon className="h-[18px] w-[18px]" />
                 </button>
@@ -86,9 +86,9 @@ export default function ConversationListClient({
                 type="button"
                 onClick={() => setComingSoonOpen(true)}
                 aria-label="Tạo hội thoại mới"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+                className="gradient-brand flex h-9 w-9 items-center justify-center rounded-full text-white shadow-float transition active:scale-90"
               >
-                <PlusIcon className="h-[18px] w-[18px]" />
+                <PlusIcon className="h-[18px] w-[18px]" strokeWidth={2.4} />
               </button>
             </div>
           </>
@@ -96,8 +96,8 @@ export default function ConversationListClient({
       </header>
 
       {conversations.length > 0 && (
-        <div className="hidden border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2 md:block">
-          <div className="flex items-center gap-2 rounded-full bg-[var(--background)] px-3 py-2">
+        <div className="glass-surface hidden border-b px-4 py-2 md:block">
+          <div className="flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-2">
             <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
             <input
               value={query}
@@ -111,16 +111,18 @@ export default function ConversationListClient({
 
       <div className="flex-1 overflow-y-auto">
         {waitingInviteCode ? (
-          <div className="mx-4 mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
+          <div className="gradient-brand-soft mx-4 mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
             <p className="text-sm text-[var(--muted)]">
               Đang chờ người ấy tham gia bằng mã mời{" "}
-              <span className="font-bold text-[var(--brand-dark)]">{waitingInviteCode}</span>
+              <span className="gradient-text font-bold">{waitingInviteCode}</span>
             </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="mx-4 mt-10 flex flex-col items-center text-center">
-            <ChatBubbleIcon className="h-9 w-9 text-[var(--muted)]" />
-            <p className="mt-2 text-sm text-[var(--muted)]">
+            <div className="gradient-brand-soft flex h-16 w-16 items-center justify-center rounded-full">
+              <ChatBubbleIcon className="h-8 w-8 text-[var(--brand-dark)]" />
+            </div>
+            <p className="mt-3 text-sm text-[var(--muted)]">
               {query ? "Không tìm thấy hội thoại nào phù hợp." : "Chưa có hội thoại nào."}
             </p>
           </div>
@@ -140,7 +142,7 @@ export default function ConversationListClient({
           type="button"
           onClick={() => setInstantOpen(true)}
           aria-label="Chụp ảnh tức thì"
-          className="safe-bottom fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition active:scale-90 md:hidden"
+          className="gradient-brand safe-bottom fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-float transition active:scale-90 md:hidden"
         >
           <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
         </button>
@@ -149,8 +151,8 @@ export default function ConversationListClient({
       {comingSoonOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div className="absolute inset-0 bg-black/35" onClick={() => setComingSoonOpen(false)} aria-hidden />
-          <div className="safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl bg-[var(--surface)] p-6 text-center shadow-xl">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand)]">
+          <div className="glass-surface-strong safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl border p-6 text-center shadow-xl">
+            <div className="gradient-brand mx-auto flex h-12 w-12 items-center justify-center rounded-full text-white shadow-float">
               <ChatBubbleIcon className="h-6 w-6" />
             </div>
             <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Sắp ra mắt</h2>
@@ -161,7 +163,7 @@ export default function ConversationListClient({
             <button
               type="button"
               onClick={() => setComingSoonOpen(false)}
-              className="mt-4 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-semibold text-white transition active:scale-95"
+              className="gradient-brand mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-white shadow-float transition active:scale-95"
             >
               Đã hiểu
             </button>

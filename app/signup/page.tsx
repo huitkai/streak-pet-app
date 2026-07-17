@@ -69,8 +69,8 @@ export default function SignupPage() {
 
   if (sentTo) {
     return (
-      <div className="safe-top safe-bottom flex flex-1 items-center justify-center overflow-y-auto bg-[var(--background)] px-4 py-8">
-        <div className="w-full max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-[0_2px_20px_-6px_rgba(44,34,48,0.08)]">
+      <div className="safe-top safe-bottom flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
+        <div className="glass-surface-strong w-full max-w-sm rounded-3xl border p-8 text-center shadow-glass">
           <button
             onClick={() => setSentTo(null)}
             aria-label="Quay lại"
@@ -129,7 +129,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="safe-top safe-bottom flex flex-1 items-center justify-center overflow-y-auto bg-[var(--background)] px-4 py-8">
+    <div className="safe-top safe-bottom flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
       <div className="w-full max-w-sm">
         {/* Thương hiệu */}
         <div className="mb-7 flex flex-col items-center text-center">
@@ -140,7 +140,7 @@ export default function SignupPage() {
           <p className="mt-1 text-sm text-[var(--muted)]">Chat mỗi ngày, giữ chuỗi, nuôi lớn thú cưng của hai bạn</p>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7 shadow-[0_2px_20px_-6px_rgba(44,34,48,0.08)]">
+        <div className="glass-surface-strong rounded-3xl border p-7 shadow-glass">
           <h2 className="mb-1 text-lg font-semibold text-[var(--foreground)]">Tạo tài khoản</h2>
           <p className="mb-5 text-sm text-[var(--muted)]">Chỉ mất chưa đến một phút</p>
 
@@ -200,7 +200,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[var(--brand-dark)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="gradient-brand mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[15px] font-semibold text-white shadow-float transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending && (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />

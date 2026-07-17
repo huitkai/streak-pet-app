@@ -130,11 +130,11 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="safe-top relative z-20 flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)]/95 px-2.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] backdrop-blur-sm">
+      <header className="glass-surface-strong safe-top relative z-20 flex shrink-0 items-center gap-2 border-b px-2.5 py-2.5 shadow-glass">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-black/5"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-black/10"
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </Link>
@@ -144,17 +144,17 @@ export default function ChatHeader({
           href={partnerId ? `/profile/${partnerId}` : "#"}
           className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
         >
-          <span className="relative shrink-0">
-            <Avatar url={partner?.avatar_url} name={nickname || petName} size={40} ring />
+          <span className="relative shrink-0 rounded-full p-[2px] gradient-brand">
+            <Avatar url={partner?.avatar_url} name={nickname || petName} size={38} />
             {isPartnerOnline && (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-green-500" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-emerald-400" />
             )}
           </span>
           <div className="flex min-w-0 flex-col items-start text-left">
             <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
             <span
               className={`truncate text-[11px] ${
-                isPartnerOnline ? "font-medium text-green-600" : "text-[var(--muted)]"
+                isPartnerOnline ? "font-medium text-emerald-600" : "text-[var(--muted)]"
               }`}
             >
               {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
@@ -175,7 +175,7 @@ export default function ChatHeader({
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="Tuỳ chỉnh đoạn chat"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/10"
         >
           <MoreIcon className="h-5 w-5" />
         </button>
