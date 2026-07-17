@@ -73,7 +73,7 @@ export default async function ChatPage() {
         coupleId={couple.id}
         initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}
         initialAccessory={accessory}
-        className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]"
+        className="app-ambient-bg flex flex-1 flex-col overflow-hidden"
       >
         <ChatHeader
           coupleId={couple.id}
