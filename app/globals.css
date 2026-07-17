@@ -63,6 +63,21 @@
     0 6px 16px -8px rgba(0, 0, 0, 0.45);
 }
 
+/* Ô nhập liệu ĐẶC (không kính/không blur/không viền) theo ảnh tham khảo mới
+   nhất — trước đây backdrop-blur của .glass-pill làm nhoè hẳn 1 mảng nội
+   dung tin nhắn phía sau, nhìn giống như còn sót lại 1 thanh nền che nội
+   dung dù đã bỏ .glass-surface bọc ngoài. Đổi hẳn sang nền màu đặc, phẳng,
+   không viền, không đổ bóng lớn — chỉ 1 khối màu tối rõ ràng như ảnh mẫu. */
+.input-pill-solid {
+  background: var(--background-elevated);
+}
+.input-btn-solid {
+  background: var(--background-elevated);
+}
+.input-btn-solid:active {
+  background: var(--surface);
+}
+
 /* Nút tròn kính mờ dùng trong thanh nhập liệu (nút "+", mic...) — cùng chất
    liệu kính với .glass-pill (thay vì nền cam đặc bg-[var(--brand-light)]
    trước đây) để icon cam nổi trên nền kính trong suốt, đồng bộ hiệu ứng với

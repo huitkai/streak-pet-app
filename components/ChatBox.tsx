@@ -1615,7 +1615,7 @@ export default function ChatBox({
           và nút tròn nổi lên trên nền trong suốt, đúng kiểu "nổi lơ lửng"
           trong ảnh tham khảo. Đồng thời nhấc cả cụm lên cao hơn 1 chút khỏi
           mép dưới màn hình (thêm padding-bottom ngoài safe-area). */}
-      <div className="safe-bottom-lift relative z-10 px-3 pt-1.5">
+      <div className="safe-bottom-lift relative z-10 px-2.5 pt-1.5">
         {pickerOpen && (
           <StickerPicker
             onSelectSticker={handlePickSticker}
@@ -1697,15 +1697,15 @@ export default function ChatBox({
             </>
           )}
 
-          <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-1.5">
+          <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-2">
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-            <div className="glass-pill flex min-w-0 flex-1 items-center rounded-full pl-3.5 pr-1.5">
+            <div className="input-pill-solid flex min-w-0 flex-1 items-center rounded-full py-0.5 pl-4 pr-2">
               <input
                 value={text}
                 onChange={(e) => handleTextChange(e.target.value)}
                 onFocus={() => setAttachOpen(false)}
                 placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
-                className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+                className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
               />
               {!editingId && (
                 <button
@@ -1715,9 +1715,9 @@ export default function ChatBox({
                     setInstantCaptureOpen(true);
                   }}
                   aria-label="Chụp nhanh"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition active:scale-90"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition active:scale-90"
                 >
-                  <CameraIcon className="h-4 w-4" />
+                  <CameraIcon className="h-5 w-5" />
                 </button>
               )}
             </div>
@@ -1729,9 +1729,9 @@ export default function ChatBox({
               <button
                 type="submit"
                 aria-label="Gửi"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_-4px_rgba(217,118,44,0.7)] transition active:scale-95"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_-4px_rgba(217,118,44,0.7)] transition active:scale-95"
               >
-                <SendIcon className="h-4 w-4" />
+                <SendIcon className="h-[18px] w-[18px]" />
               </button>
             ) : (
               <button
@@ -1741,11 +1741,11 @@ export default function ChatBox({
                   setAttachOpen((v) => !v);
                 }}
                 aria-label="Đính kèm"
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                  attachOpen ? "rotate-45 bg-[var(--brand)] text-white" : "glass-icon-btn text-[var(--brand)]"
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                  attachOpen ? "rotate-45 bg-[var(--brand)] text-white" : "input-btn-solid text-[var(--brand)]"
                 }`}
               >
-                <PlusIcon className="h-5 w-5" />
+                <PlusIcon className="h-[22px] w-[22px]" />
               </button>
             )}
           </form>
