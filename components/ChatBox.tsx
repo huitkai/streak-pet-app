@@ -1150,7 +1150,12 @@ export default function ChatBox({
       />
 
       <div className="relative flex-1 overflow-hidden">
-        <div ref={scrollRef} onScroll={handleScroll} className="thin-scroll absolute inset-0 overflow-y-auto px-3 py-4">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="thin-scroll absolute inset-0 overflow-y-auto px-3 pt-4"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        >
           <div className="space-y-2">
             {loadingOlder && (
               <div className="flex flex-col gap-2 pb-2">
@@ -1609,13 +1614,17 @@ export default function ChatBox({
         <InstantCapture onCapture={handleStampCapture} onClose={() => setInstantCaptureOpen(false)} />
       )}
 
-      {/* Trước đây cả thanh composer nằm trong 1 khối "glass-surface" full-width
-          (viền + nền kính riêng) trông như 1 thanh footer tách biệt. Bỏ khối
-          nền/viền đó đi — để lộ nền chat phía sau, chỉ còn ô nhập (glass-pill)
-          và nút tròn nổi lên trên nền trong suốt, đúng kiểu "nổi lơ lửng"
-          trong ảnh tham khảo. Đồng thời nhấc cả cụm lên cao hơn 1 chút khỏi
-          mép dưới màn hình (thêm padding-bottom ngoài safe-area). */}
-      <div className="safe-bottom-lift relative z-10 px-2.5 pt-1.5">
+      {/* Ô nhập nổi ĐÈ lên trên danh sách tin nhắn: khối này giờ là 1 lớp phủ
+          định vị "absolute" dính đáy khung chat (thay vì 1 hàng flex riêng
+          chiếm chỗ), nên tin nhắn phía trên cuộn xuyên qua ngay bên dưới/phía
+          sau nó — không còn khoảng nền/footer riêng cho composer. Bản thân ô
+          nhập (.glass-pill) và nút tròn dùng chất liệu kính mờ thật (blur +
+          nền bán trong suốt) để nhìn thấy tin nhắn nhoè phía sau khi cuộn qua,
+          đúng hiệu ứng "kính" trong ảnh tham khảo. Khối bọc ngoài chỉ cao bằng
+          đúng nội dung của nó (picker/reply-bar/pill) nên không cần
+          pointer-events-none — không có vùng trong suốt nào chặn thao tác
+          cuộn phía trên nó. */}
+      <div className="safe-bottom-lift absolute inset-x-0 bottom-0 z-20 px-2.5 pt-1.5">
         {pickerOpen && (
           <StickerPicker
             onSelectSticker={handlePickSticker}
