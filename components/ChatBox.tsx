@@ -1342,7 +1342,7 @@ export default function ChatBox({
                         <div
                           onClick={() => handleBubbleClick(m.id)}
                           className={`select-none rounded-2xl px-3.5 py-2 text-sm italic text-[var(--muted)] ${
-                            mine ? "rounded-br-md bg-black/5" : "rounded-bl-md bg-black/5"
+                            mine ? "rounded-br-md bg-white/5" : "rounded-bl-md bg-white/5"
                           }`}
                         >
                           <UndoIcon className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
@@ -1382,7 +1382,7 @@ export default function ChatBox({
                               src={decoded.url}
                               alt="Ảnh đã gửi"
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
-                              className="max-h-72 w-full bg-black/5"
+                              className="max-h-72 w-full bg-white/5"
                               imgClassName="max-h-72 w-full object-cover"
                               onSettled={handleImageSettled}
                             />
@@ -1463,7 +1463,7 @@ export default function ChatBox({
                               src={decoded.url}
                               alt="GIF đã gửi"
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
-                              className="max-h-72 w-full bg-black/5"
+                              className="max-h-72 w-full bg-white/5"
                               imgClassName="max-h-72 w-full object-cover"
                               onSettled={handleImageSettled}
                             />
@@ -1492,14 +1492,14 @@ export default function ChatBox({
                           onPointerUp={cancelLongPress}
                           onPointerLeave={cancelLongPress}
                           onClick={() => handleBubbleClick(m.id)}
-                          className={`animate-bubble-in pointer-events-auto select-none rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm ${
-                            mine ? "rounded-br-md bg-[var(--brand)] text-white" : "glass-surface rounded-bl-md text-[var(--foreground)]"
-                          } ${m.pending ? "opacity-60" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
+                          className={`animate-bubble-in glass-surface pointer-events-auto select-none rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm ${
+                            mine ? "rounded-br-md" : "rounded-bl-md"
+                          } text-[var(--foreground)] ${m.pending ? "opacity-60" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
                         >
                           {replyTarget && <ReplyQuoteInline message={replyTarget} mine={mine} onJump={() => jumpToMessage(replyTarget)} />}
                           {decoded.text}
                           {m.edited_at && (
-                            <span className={`ml-1.5 text-[10px] ${mine ? "text-white/70" : "text-[var(--muted)]"}`}>(đã sửa)</span>
+                            <span className="ml-1.5 text-[10px] text-[var(--muted)]">(đã sửa)</span>
                           )}
                         </div>
                       )}
@@ -1779,13 +1779,28 @@ export default function ChatBox({
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
-              <input
-                value={text}
-                onChange={(e) => handleTextChange(e.target.value)}
-                onFocus={() => setAttachOpen(false)}
-                placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
-                className="glass-pill min-w-0 flex-1 rounded-full px-3.5 py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--brand)]"
-              />
+              <div className="glass-pill flex min-w-0 flex-1 items-center rounded-full pl-3.5 pr-1.5">
+                <input
+                  value={text}
+                  onChange={(e) => handleTextChange(e.target.value)}
+                  onFocus={() => setAttachOpen(false)}
+                  placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
+                  className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+                />
+                {!editingId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachOpen(false);
+                      setInstantCaptureOpen(true);
+                    }}
+                    aria-label="Chụp nhanh"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition active:scale-90"
+                  >
+                    <CameraIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
               {text.trim() ? (
                 <button
                   type="submit"

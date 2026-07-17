@@ -68,8 +68,8 @@ export default function VoiceMessageBubble({
 
   return (
     <div
-      className={`animate-bubble-in flex min-w-[190px] items-center gap-2 rounded-2xl px-3 py-2.5 shadow-sm ${
-        mine ? "rounded-br-md bg-[var(--brand)] text-white" : "glass-surface rounded-bl-md text-[var(--foreground)]"
+      className={`animate-bubble-in glass-surface flex min-w-[190px] items-center gap-2 rounded-2xl px-3 py-2.5 text-[var(--foreground)] shadow-sm ${
+        mine ? "rounded-br-md" : "rounded-bl-md"
       }`}
     >
       <audio ref={audioRef} src={url} preload="metadata" className="hidden" />
@@ -77,9 +77,7 @@ export default function VoiceMessageBubble({
         type="button"
         onClick={toggle}
         aria-label={playing ? "Tạm dừng" : "Phát"}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full active:scale-95 ${
-          mine ? "bg-white/20" : "bg-[var(--brand)] text-white"
-        }`}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white active:scale-95"
       >
         {playing ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
       </button>
@@ -88,17 +86,13 @@ export default function VoiceMessageBubble({
         {bars.map((h, i) => (
           <span
             key={i}
-            className={`w-[2.5px] shrink-0 rounded-full ${
-              i < activeBars ? (mine ? "bg-white" : "bg-[var(--brand)]") : mine ? "bg-white/40" : "bg-white/15"
-            }`}
+            className={`w-[2.5px] shrink-0 rounded-full ${i < activeBars ? "bg-[var(--brand)]" : "bg-white/15"}`}
             style={{ height: `${h * 18}px` }}
           />
         ))}
       </div>
 
-      <span className={`shrink-0 text-[11px] tabular-nums ${mine ? "text-white/85" : "text-[var(--muted)]"}`}>
-        {formatDuration(duration)}
-      </span>
+      <span className="shrink-0 text-[11px] tabular-nums text-[var(--muted)]">{formatDuration(duration)}</span>
     </div>
   );
 }
