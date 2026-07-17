@@ -354,6 +354,25 @@ export function TrashIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProp
   );
 }
 
+/** Vòng tròn gạch chéo — dùng cho hành động "Chặn" người dùng. */
+export function BlockIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.6 5.6 18.4 18.4" />
+    </svg>
+  );
+}
+
+/** Icon lá cờ — dùng cho hành động "Báo cáo" cuộc trò chuyện/người dùng. */
+export function FlagIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M5 21V4.5c0-.55.45-1 1-1 2.2 0 2.2 1.2 4.9 1.2 2.4 0 3-1.2 5.4-1.2.7 0 1.2.5 1.2 1.15v8.1c0 .6-.5 1.1-1.15 1.1-2.35 0-3.05 1.15-5.45 1.15-2.7 0-2.7-1.15-4.9-1.15" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function UndoIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>

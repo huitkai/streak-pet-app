@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateCoupleTheme, updateNickname } from "@/lib/actions";
 import { decodeMessage } from "@/lib/message-format";
 import { THEME_PRESETS, isValidHex, DEFAULT_THEME_COLOR } from "@/lib/theme";
 import Avatar from "@/components/Avatar";
 import {
-  ArrowLeftIcon,
-  MoreIcon,
+  ChevronLeftIcon,
+  MoreVerticalIcon,
   FlameIcon,
   ImageIcon,
   TrophyIcon,
@@ -19,6 +19,9 @@ import {
   PaletteIcon,
   EditIcon,
   CheckIcon,
+  TrashIcon,
+  BlockIcon,
+  FlagIcon,
 } from "@/components/icons";
 
 /** "12 tháng 6, 2026" — dùng cho dòng phụ đề dưới tên đối phương. */
@@ -72,7 +75,20 @@ export default function ChatSettingsSheet({
   const [themeSaved, setThemeSaved] = useState(false);
   const [nicknameSaved, setNicknameSaved] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [, startTransition] = useTransition();
+
+  // Đóng dropdown "..." khi bấm ra ngoài — hành vi menu chuẩn, tránh menu
+  // treo lơ lửng che nội dung phía dưới.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
 
   // Ảnh gần đây để hiện trong khối "Ảnh và khoảnh khắc" — chỉ 1 lần khi mở
   // sheet, KHÔNG cần realtime (ảnh cũ không đổi), nên fetch client 1 lần là đủ.
@@ -155,24 +171,55 @@ export default function ChatSettingsSheet({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col app-ambient-bg animate-pop-in">
-      {/* ---- Header: back + more, giống mẫu ---- */}
-      <header className="safe-top flex shrink-0 items-center justify-between px-3 pb-2">
+      {/* ---- Header: back + menu "...", giống mẫu ---- */}
+      <header className="safe-top relative flex shrink-0 items-center justify-between px-3 pb-2">
         <button
           type="button"
           onClick={onClose}
           aria-label="Quay lại"
           className="glass-icon-btn flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
         >
-          <ArrowLeftIcon className="h-5 w-5" />
+          <ChevronLeftIcon className="h-5 w-5" />
         </button>
-        <button
-          type="button"
-          onClick={() => setCustomizeOpen((v) => !v)}
-          aria-label="Tuỳ chỉnh thêm"
-          className="glass-icon-btn flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
-        >
-          <MoreIcon className="h-5 w-5" />
-        </button>
+
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Thêm tuỳ chọn"
+            aria-expanded={menuOpen}
+            className="glass-icon-btn flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
+          >
+            <MoreVerticalIcon className="h-5 w-5" />
+          </button>
+
+          {/* Menu "..." trước đây mở thẳng phần tuỳ chỉnh chủ đề — không hợp
+              lý vì đó là hành động thường xuyên hơn nên đã chuyển thành 1
+              dòng "Chủ đề & biệt danh" trong danh sách tuỳ chọn phía dưới.
+              Menu này giờ chỉ chứa các hành động mang tính "..." thật sự:
+              xoá cuộc trò chuyện, chặn, báo cáo (UI trước, nối backend sau). */}
+          {menuOpen && (
+            <div className="glass-surface absolute right-0 top-11 z-10 w-52 overflow-hidden rounded-2xl py-1.5 shadow-xl animate-pop-in">
+              <MenuAction
+                icon={<TrashIcon className="h-[18px] w-[18px]" />}
+                label="Xoá cuộc trò chuyện"
+                danger
+                onClick={() => setMenuOpen(false)}
+              />
+              <MenuAction
+                icon={<BlockIcon className="h-[18px] w-[18px]" />}
+                label="Chặn"
+                danger
+                onClick={() => setMenuOpen(false)}
+              />
+              <MenuAction
+                icon={<FlagIcon className="h-[18px] w-[18px]" />}
+                label="Báo cáo"
+                onClick={() => setMenuOpen(false)}
+              />
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8">
@@ -246,6 +293,15 @@ export default function ChatSettingsSheet({
           <SettingsRow icon={<BellIcon className="h-[18px] w-[18px]" />} label="Thông báo" />
           <SettingsRow icon={<ImageIcon className="h-[18px] w-[18px]" />} label="Hiển thị media" />
           <SettingsRow icon={<PinIcon className="h-[18px] w-[18px]" />} label="Tin nhắn đã ghim" />
+          {/* Trước đây chỉ mở được qua nút "..." ở header — giờ là 1 dòng
+              bình thường trong danh sách vì đây là thao tác hay dùng, không
+              nên giấu sau menu "..." (menu đó giờ dành cho xoá/chặn/báo cáo). */}
+          <SettingsRow
+            icon={<PaletteIcon className="h-[18px] w-[18px]" />}
+            label="Chủ đề & biệt danh"
+            expanded={customizeOpen}
+            onClick={() => setCustomizeOpen((v) => !v)}
+          />
           <SettingsRow
             icon={<LockIcon className="h-[18px] w-[18px]" />}
             label="Khoá đoạn chat"
@@ -255,8 +311,8 @@ export default function ChatSettingsSheet({
           />
         </section>
 
-        {/* ---- Tuỳ chỉnh nâng cao (màu chủ đề + biệt danh) — bấm nút "..." ở
-             header để mở, giữ nguyên tính năng cũ nhưng gọn lại phía dưới. ---- */}
+        {/* ---- Tuỳ chỉnh nâng cao (màu chủ đề + biệt danh) — bấm dòng "Chủ
+             đề & biệt danh" ở trên để mở, giữ nguyên tính năng cũ. ---- */}
         {customizeOpen && (
           <section className="glass-surface mt-5 rounded-2xl p-4">
             <p className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold text-[var(--muted)]">
@@ -354,20 +410,27 @@ export default function ChatSettingsSheet({
   );
 }
 
-/** 1 hàng trong danh sách tuỳ chọn — có thể là hàng điều hướng (chevron) hoặc
- * hàng bật/tắt (toggle switch), tái dùng chung 1 layout cho cả 2 kiểu. */
+/** 1 hàng trong danh sách tuỳ chọn — có thể là hàng điều hướng (chevron),
+ * hàng mở/đóng 1 khối bên dưới (chevron xoay theo `expanded`), hoặc hàng
+ * bật/tắt (toggle switch). Dùng chung 1 layout cho cả 3 kiểu. */
 function SettingsRow({
   icon,
   label,
   toggle = false,
   checked = false,
   onToggle,
+  expanded,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   toggle?: boolean;
   checked?: boolean;
   onToggle?: () => void;
+  /** Khi có giá trị (true/false) -> hàng này điều khiển 1 khối mở/đóng bên
+   * dưới, chevron sẽ xoay 90° lúc mở thay vì chỉ là mũi tên điều hướng tĩnh. */
+  expanded?: boolean;
+  onClick?: () => void;
 }) {
   const content = (
     <>
@@ -386,7 +449,11 @@ function SettingsRow({
           />
         </span>
       ) : (
-        <ChevronRightIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+        <ChevronRightIcon
+          className={`h-4 w-4 shrink-0 text-[var(--muted)] transition-transform ${
+            expanded ? "rotate-90" : ""
+          }`}
+        />
       )}
     </>
   );
@@ -399,8 +466,36 @@ function SettingsRow({
     );
   }
   return (
-    <button type="button" className="flex w-full items-center gap-3 px-4 py-3 transition active:bg-white/5">
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3 transition active:bg-white/5">
       {content}
+    </button>
+  );
+}
+
+/** 1 dòng hành động trong menu "..." (xoá cuộc trò chuyện / chặn / báo cáo).
+ * `danger` tô đỏ cho các hành động phá huỷ/tiêu cực, phân biệt với "Báo cáo"
+ * (trung tính) bằng màu chữ thường. */
+function MenuAction({
+  icon,
+  label,
+  onClick,
+  danger = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] font-medium transition active:bg-white/5 ${
+        danger ? "text-red-500" : "text-[var(--foreground)]"
+      }`}
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
+      {label}
     </button>
   );
 }
