@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
+/*
+ * Theme "Dark Glass" — nền nâu-đen ấm + card kính mờ (backdrop-blur), viền
+ * trắng mờ, chữ trắng ngà, điểm nhấn cam hổ phách (amber) cho hành động
+ * chính + đỏ cho badge chưa đọc. Thay cho theme hồng-trắng cũ.
+ * Xem thêm .glass-surface / .glass-pill bên dưới cho lớp kính dùng chung.
+ */
 :root {
-  --background: #fff5f7;
-  --foreground: #2c2230;
-  --brand: #ec4f83;
-  --brand-dark: #c73868;
-  --brand-light: #ffe1ea;
-  --surface: #ffffff;
-  --border: #f3d9e2;
-  --muted: #8a7b85;
+  --background: #16110e;
+  --background-elevated: #1e1712;
+  --foreground: #f6efe7;
+  --brand: #f0954a;
+  --brand-dark: #d9762c;
+  --brand-light: rgba(240, 149, 74, 0.16);
+  --surface: #241b16;
+  --surface-glass: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.09);
+  --muted: #a89686;
+  --danger: #ff4d4d;
 }
 
 @theme inline {
@@ -17,6 +26,31 @@
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-brand-light: var(--brand-light);
+}
+
+/* Nền tổng thể: gradient nâu ấm nhiều lớp, tạo chiều sâu giống ảnh tham chiếu
+   thay vì 1 màu phẳng. Cố định (fixed) để không bị "trôi" khi cuộn danh sách. */
+.app-ambient-bg {
+  background:
+    radial-gradient(120% 90% at 15% -10%, rgba(240, 149, 74, 0.16) 0%, transparent 55%),
+    radial-gradient(100% 70% at 100% 0%, rgba(120, 80, 60, 0.22) 0%, transparent 60%),
+    linear-gradient(180deg, #1c150f 0%, #14100c 55%, #100c09 100%);
+}
+
+/* Card/thanh kính mờ dùng chung: header, ô tìm kiếm, hàng hội thoại, tab bar,
+   sheet... Nền bán trong suốt + blur + viền sáng mờ 1px kiểu iOS glass. */
+.glass-surface {
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -42,7 +76,6 @@ html {
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif;
   height: 100dvh;
@@ -54,14 +87,6 @@ body {
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
 }
 
 @keyframes pet-breathe {

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ec4f83",
+  themeColor: "#16110e",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="h-full antialiased">
-      <body className="h-full flex flex-col overflow-hidden font-sans">{children}</body>
+      <body className="app-ambient-bg h-full flex flex-col overflow-hidden font-sans">{children}</body>
     </html>
   );
 }

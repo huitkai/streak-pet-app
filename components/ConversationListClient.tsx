@@ -40,10 +40,10 @@ export default function ConversationListClient({
   }, [conversations, query]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+    <div className="flex flex-1 flex-col overflow-hidden text-[var(--foreground)]">
+      <header className="safe-top flex shrink-0 items-center justify-between gap-3 px-5 pb-3">
         {searchOpen ? (
-          <div className="flex flex-1 items-center gap-2">
+          <div className="glass-pill flex flex-1 items-center gap-2 rounded-full px-4 py-2.5">
             <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
             <input
               autoFocus
@@ -59,26 +59,23 @@ export default function ConversationListClient({
                 setQuery("");
               }}
               aria-label="Đóng tìm kiếm"
-              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90 active:bg-black/5"
+              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90"
             >
               <XIcon className="h-4 w-4" />
             </button>
           </div>
         ) : (
           <>
-            <span className="font-serif text-[22px] italic tracking-tight text-[var(--foreground)] md:hidden">
-              Streak&nbsp;Pet
-            </span>
-            <h1 className="hidden text-xl font-bold text-[var(--foreground)] md:block">Tin nhắn</h1>
-            <div className="flex items-center gap-1">
+            <h1 className="text-[28px] font-bold tracking-tight text-[var(--foreground)]">Chats</h1>
+            <div className="flex items-center gap-2">
               {conversations.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Tìm hội thoại"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5 md:hidden"
+                  className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
                 >
-                  <SearchIcon className="h-[18px] w-[18px]" />
+                  <SearchIcon className="h-[17px] w-[17px]" />
                 </button>
               )}
 
@@ -86,35 +83,21 @@ export default function ConversationListClient({
                 type="button"
                 onClick={() => setComingSoonOpen(true)}
                 aria-label="Tạo hội thoại mới"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+                className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
               >
-                <PlusIcon className="h-[18px] w-[18px]" />
+                <PlusIcon className="h-[17px] w-[17px]" />
               </button>
             </div>
           </>
         )}
       </header>
 
-      {conversations.length > 0 && (
-        <div className="hidden border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2 md:block">
-          <div className="flex items-center gap-2 rounded-full bg-[var(--background)] px-3 py-2">
-            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm hội thoại..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-3 pb-4">
         {waitingInviteCode ? (
-          <div className="mx-4 mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
+          <div className="glass-surface mx-1 mt-4 rounded-3xl p-5 text-center">
             <p className="text-sm text-[var(--muted)]">
               Đang chờ người ấy tham gia bằng mã mời{" "}
-              <span className="font-bold text-[var(--brand-dark)]">{waitingInviteCode}</span>
+              <span className="font-bold text-[var(--brand)]">{waitingInviteCode}</span>
             </p>
           </div>
         ) : filtered.length === 0 ? (
@@ -140,7 +123,7 @@ export default function ConversationListClient({
           type="button"
           onClick={() => setInstantOpen(true)}
           aria-label="Chụp ảnh tức thì"
-          className="safe-bottom fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition active:scale-90 md:hidden"
+          className="safe-bottom fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[0_8px_24px_rgba(240,149,74,0.45)] transition active:scale-90 md:hidden"
         >
           <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
         </button>
@@ -148,8 +131,8 @@ export default function ConversationListClient({
 
       {comingSoonOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/35" onClick={() => setComingSoonOpen(false)} aria-hidden />
-          <div className="safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl bg-[var(--surface)] p-6 text-center shadow-xl">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setComingSoonOpen(false)} aria-hidden />
+          <div className="glass-surface safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl p-6 text-center shadow-xl">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand)]">
               <ChatBubbleIcon className="h-6 w-6" />
             </div>

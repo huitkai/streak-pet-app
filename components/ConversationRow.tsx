@@ -62,14 +62,14 @@ export default function ConversationRow({
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative mb-2 overflow-hidden rounded-3xl">
       {/* Lớp nền chứa 2 nút hành động, luôn nằm dưới, chỉ lộ ra khi vuốt trái */}
       <motion.div className="absolute inset-y-0 right-0 flex" style={{ opacity: actionsOpacity }}>
         <button
           type="button"
           onClick={handleMute}
           style={{ width: ACTION_WIDTH }}
-          className="flex h-full flex-col items-center justify-center gap-1 bg-amber-500 text-white active:brightness-95"
+          className="flex h-full flex-col items-center justify-center gap-1 bg-amber-600 text-white active:brightness-95"
         >
           <BellOffIcon className="h-5 w-5" filled={isMuted} />
           <span className="text-[10px] font-semibold">{isMuted ? "Đã tắt" : "Tắt tin"}</span>
@@ -95,7 +95,7 @@ export default function ConversationRow({
           const shouldOpen = x.get() < -OPEN_THRESHOLD || info.velocity.x < -400;
           animate(x, shouldOpen ? -ACTIONS_TOTAL : 0, { type: "spring", stiffness: 500, damping: 40 });
         }}
-        className="relative bg-[var(--surface)]"
+        className="glass-surface relative rounded-3xl"
       >
         <a
           href="/chat"
@@ -109,16 +109,16 @@ export default function ConversationRow({
             }
             router.push("/chat");
           }}
-          className="flex items-center gap-3 px-4 py-3 transition active:bg-black/5"
+          className="flex items-center gap-3 rounded-3xl px-3.5 py-3 transition active:bg-white/5"
         >
           <span className="relative shrink-0">
             <Avatar
               url={conversation.partnerProfile?.avatar_url}
               name={conversation.nickname || conversation.petName}
-              size={52}
+              size={54}
             />
             {isOnline && (
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--surface)] bg-green-500" />
+              <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}
           </span>
 
@@ -127,7 +127,7 @@ export default function ConversationRow({
               <span className="flex min-w-0 items-center gap-1">
                 {isPinned && <PinIcon className="h-3 w-3 shrink-0 text-[var(--muted)]" filled />}
                 <span
-                  className={`truncate ${
+                  className={`truncate text-[15px] ${
                     hasUnread ? "font-bold text-[var(--foreground)]" : "font-semibold text-[var(--foreground)]"
                   }`}
                 >
@@ -141,7 +141,6 @@ export default function ConversationRow({
                     <TimeText iso={conversation.lastMessageAt} />
                   </span>
                 )}
-                <FlameBadge streak={conversation.currentStreak} size="sm" />
               </div>
             </div>
             <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -152,11 +151,14 @@ export default function ConversationRow({
               >
                 {conversation.previewText}
               </p>
-              {hasUnread && !isMuted && (
-                <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] px-1.5 text-[10px] font-bold text-white">
-                  {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                </span>
-              )}
+              <div className="flex shrink-0 items-center gap-1.5">
+                <FlameBadge streak={conversation.currentStreak} size="sm" />
+                {hasUnread && !isMuted && (
+                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-bold text-white">
+                    {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </a>

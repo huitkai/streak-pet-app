@@ -487,18 +487,6 @@ export function ReelIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps
 /** Kính lúp tìm kiếm cho danh sách hội thoại (kích thước nhỏ hơn SearchIcon 1 chút
  * về mặt dùng, nhưng hiện tại tái sử dụng cùng path cho nhất quán — giữ tên riêng
  * để chỗ gọi rõ ngữ nghĩa). */
-/** Icon cài đặt kiểu "sliders" — 2 thanh trượt với núm tròn, gọn và hiện đại
- * hơn hẳn icon bánh răng 8 cánh cũ (dễ rối mắt ở kích thước nhỏ). */
-export function SlidersIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
-      <path d="M4 7h6M16.3 7H20M4 17h9.3M17.6 17H20" />
-      <circle cx="11" cy="7" r="2.3" fill="currentColor" stroke="none" />
-      <circle cx="15.6" cy="17" r="2.3" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 export function SettingsIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
@@ -521,6 +509,14 @@ export function ChevronRightIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: I
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
       <path d="M9 5.5 15.5 12 9 18.5" />
+    </svg>
+  );
+}
+
+export function PhoneIcon({ className = "w-5 h-5", strokeWidth = 1.8, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth} fill={filled ? "currentColor" : "none"}>
+      <path d="M5.5 3.5h3l1.6 4.2-2 1.6a12.5 12.5 0 0 0 6.6 6.6l1.6-2 4.2 1.6v3c0 1-.85 1.75-1.83 1.63A17.5 17.5 0 0 1 3.87 5.33 1.65 1.65 0 0 1 5.5 3.5Z" />
     </svg>
   );
 }
