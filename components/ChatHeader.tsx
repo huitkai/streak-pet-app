@@ -155,27 +155,32 @@ export default function ChatHeader({
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}
-            {/* Streak dời khỏi thanh nút header (đỡ chồng lấn nút gọi/settings) ->
-                gắn thành huy hiệu nhỏ ở góc avatar, kiểu "streak badge" quen thuộc
-                (Snapchat/Zalo). Bấm vào avatar/tên vẫn mở trang hồ sơ như cũ; muốn
-                xem chi tiết chuỗi + pet thì bấm thẳng vào huy hiệu lửa này. */}
-            {streak.current_streak > 0 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSheetOpen(true);
-                }}
-                aria-label="Xem chuỗi và pet"
-                className="absolute -bottom-1 -left-1.5 transition active:scale-90"
-              >
-                <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
-              </button>
-            )}
           </span>
-          <div className="flex min-w-0 flex-col items-start text-left">
-            <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
+          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+            {/* Streak trước đây gắn làm huy hiệu ở góc avatar (36px) -> viên
+                pill lửa+số lớn hơn hẳn góc avatar nên đè lên che mất mặt
+                avatar. Dời hẳn ra khỏi avatar, đặt thành 1 chip nhỏ đi kèm
+                ngay sau tên (giữa dòng, cùng baseline) — vẫn bấm được để mở
+                PetSheet, nhưng không còn chồng lấn/che bất kỳ phần nào của
+                avatar nữa. Tên dùng min-w-0 + truncate để tự nhường chỗ cho
+                chip khi tên dài, chip luôn giữ nguyên kích thước (shrink-0). */}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
+              {streak.current_streak > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSheetOpen(true);
+                  }}
+                  aria-label="Xem chuỗi và pet"
+                  className="shrink-0 transition active:scale-90"
+                >
+                  <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
+                </button>
+              )}
+            </span>
             <span
               className={`truncate text-[11px] ${
                 isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"
