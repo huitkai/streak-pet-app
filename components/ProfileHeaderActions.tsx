@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import SettingsSheet from "@/components/SettingsSheet";
-import { SettingsIcon } from "@/components/icons";
+import { SlidersIcon } from "@/components/icons";
 
 /**
  * Nút Cài đặt đặt ngay trên thanh header của trang Hồ sơ (thay vì trôi nổi
@@ -19,7 +19,7 @@ export default function ProfileHeaderActions() {
         aria-label="Cài đặt"
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
       >
-        <SettingsIcon className="h-5 w-5" />
+        <SlidersIcon className="h-5 w-5" />
       </button>
       {open && <SettingsSheet onClose={() => setOpen(false)} />}
     </>

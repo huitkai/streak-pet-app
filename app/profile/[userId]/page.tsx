@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import ProfileEditor, {
+  AmbientGlow,
   GlassStatCards,
   GlassTagRow,
   HeroBadge,
@@ -165,15 +166,17 @@ export default async function ProfilePage({
         </div>
 
         {couple && species && (
-          <PetShowcaseCard
-            coupleId={couple.id}
-            petName={couple.pet_name}
-            species={species}
-            stage={(petStage as "egg" | "baby" | "teen" | "adult" | "legendary") || "egg"}
-            accessory={(couple.pet_accessory as PetAccessoryValue) ?? "none"}
-            activeDays={activeDays}
-            isSelf={isSelf}
-          />
+          <AmbientGlow>
+            <PetShowcaseCard
+              coupleId={couple.id}
+              petName={couple.pet_name}
+              species={species}
+              stage={(petStage as "egg" | "baby" | "teen" | "adult" | "legendary") || "egg"}
+              accessory={(couple.pet_accessory as PetAccessoryValue) ?? "none"}
+              activeDays={activeDays}
+              isSelf={isSelf}
+            />
+          </AmbientGlow>
         )}
       </div>
     </div>

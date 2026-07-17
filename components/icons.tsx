@@ -487,6 +487,18 @@ export function ReelIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps
 /** Kính lúp tìm kiếm cho danh sách hội thoại (kích thước nhỏ hơn SearchIcon 1 chút
  * về mặt dùng, nhưng hiện tại tái sử dụng cùng path cho nhất quán — giữ tên riêng
  * để chỗ gọi rõ ngữ nghĩa). */
+/** Icon cài đặt kiểu "sliders" — 2 thanh trượt với núm tròn, gọn và hiện đại
+ * hơn hẳn icon bánh răng 8 cánh cũ (dễ rối mắt ở kích thước nhỏ). */
+export function SlidersIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M4 7h6M16.3 7H20M4 17h9.3M17.6 17H20" />
+      <circle cx="11" cy="7" r="2.3" fill="currentColor" stroke="none" />
+      <circle cx="15.6" cy="17" r="2.3" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function SettingsIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>

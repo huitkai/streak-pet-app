@@ -152,6 +152,24 @@ export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
   );
 }
 
+/** Quầng sáng nền mờ đặt phía sau các card kính bên dưới hero — nếu không có
+ * gì màu ở phía sau, backdrop-blur trên nền trắng trơn sẽ vô nghĩa (kính
+ * trong suốt nhưng chẳng có gì để "mượn" mà tạo chiều sâu). Dùng `isolate`
+ * + z-index dương (không âm) để tránh lặp lại đúng lỗi stacking context đã
+ * gặp ở HeroBackground. */
+export function AmbientGlow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative isolate">
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-14 top-2 h-52 w-52 rounded-full bg-[var(--brand)]/20 blur-3xl" />
+        <div className="absolute -right-10 top-20 h-60 w-60 rounded-full bg-[#6f8fd6]/18 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-[var(--brand-dark)]/14 blur-3xl" />
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function ProfileEditor({
   userId,
   profile,
