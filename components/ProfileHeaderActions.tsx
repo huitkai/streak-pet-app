@@ -17,7 +17,7 @@ export default function ProfileHeaderActions() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Cài đặt"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
       >
         <SettingsIcon className="h-5 w-5" />
       </button>

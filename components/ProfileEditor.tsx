@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile } from "@/lib/actions";
-import Avatar from "@/components/Avatar";
 import { CameraIcon, FlameIcon, ImageIcon } from "@/components/icons";
 import type { ProfileRow } from "@/lib/types";
 
@@ -19,13 +18,69 @@ export interface ProfileTagItem {
 }
 
 function StatIcon({ icon }: { icon: ProfileStatItem["icon"] }) {
-  if (icon === "flame") return <FlameIcon className="h-4 w-4 text-orange-300" />;
-  if (icon === "image") return <ImageIcon className="h-4 w-4 text-white/80" />;
+  if (icon === "flame") return <FlameIcon className="h-4 w-4 text-orange-200" />;
+  if (icon === "image") return <ImageIcon className="h-4 w-4 text-white/85" />;
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white/80">
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white/85">
       <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.8" />
       <path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
+  );
+}
+
+export function GlassStatRow({ stats }: { stats: ProfileStatItem[] }) {
+  if (stats.length === 0) return null;
+  return (
+    <div className="grid w-full max-w-sm grid-cols-3 gap-2 rounded-3xl border border-white/25 bg-white/10 p-2 shadow-lg backdrop-blur-xl">
+      {stats.map((s, i) => (
+        <div key={i} className="flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-white">
+          <div className="flex items-center gap-1.5">
+            <StatIcon icon={s.icon} />
+            <span className="text-base font-bold leading-none">{s.value.toLocaleString("vi-VN")}</span>
+          </div>
+          <span className="text-[11px] font-medium text-white/80">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function GlassTagRow({ tags }: { tags: ProfileTagItem[] }) {
+  if (tags.length === 0) return null;
+  return (
+    <div className="flex flex-wrap justify-center gap-2">
+      {tags.map((t, i) => (
+        <span
+          key={i}
+          className="rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-xl"
+        >
+          {t.emoji ? `${t.emoji} ` : ""}
+          {t.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Nền hero full-bleed: ảnh bìa/avatar mờ dần (mask fade) hoà vào gradient
+ * thương hiệu phía dưới, giống hiệu ứng ảnh mờ→màu trong mẫu tham khảo. */
+export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
+  return (
+    <div className="absolute inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
+      {imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-x-0 top-0 h-[70%] w-full object-cover opacity-95"
+          style={{
+            maskImage: "linear-gradient(to bottom, black 35%, transparent 92%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 35%, transparent 92%)",
+          }}
+        />
+      )}
+      <div className="absolute inset-0 bg-black/10" />
+    </div>
   );
 }
 
@@ -132,50 +187,47 @@ export default function ProfileEditor({
   }
 
   return (
-    <div className="flex flex-col">
-      {/* ---- Banner ---- */}
+    <div className="relative flex min-h-[640px] flex-col items-center overflow-hidden pb-8 pt-24">
+      <HeroBackground imageUrl={bannerUrl || avatarUrl} />
+
+      {/* Nút đổi ảnh bìa, đặt kín đáo góc phải để không đè lên avatar/tên */}
       <button
         type="button"
         onClick={() => bannerRef.current?.click()}
         aria-label="Đổi ảnh bìa"
-        className="relative block h-56 w-full overflow-hidden bg-gradient-to-br from-[var(--brand-light)] via-[#ffc2d6] to-[var(--brand)]"
+        className="absolute right-3 top-[4.25rem] flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
       >
-        {bannerUrl ? (
-          <img src={bannerUrl} alt="Ảnh bìa" className="h-full w-full object-cover" />
-        ) : avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="h-full w-full scale-125 object-cover opacity-70 blur-2xl"
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/25" />
-        <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition active:scale-90">
-          <CameraIcon className="h-4.5 w-4.5" />
-        </span>
-        {uploadingBanner && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white">
-            Đang tải ảnh bìa...
-          </span>
-        )}
+        <CameraIcon className="h-4 w-4" />
       </button>
       <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={handleBannerFile} />
+      {uploadingBanner && (
+        <span className="absolute right-14 top-[4.6rem] rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md">
+          Đang tải ảnh bìa...
+        </span>
+      )}
 
-      <div className="-mt-12 flex flex-col items-center px-4 pb-2">
+      <div className="flex flex-col items-center px-5">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           className="relative active:scale-95"
           aria-label="Đổi ảnh đại diện"
         >
-          <div className="rounded-full ring-4 ring-[var(--background)]">
-            <Avatar url={avatarUrl} name={name || "?"} size={96} />
+          <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg backdrop-blur-md">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={name || "avatar"} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-white">
+                {(name?.trim()?.[0] ?? "?").toUpperCase()}
+              </div>
+            )}
           </div>
-          <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)] text-white ring-2 ring-[var(--background)]">
-            <CameraIcon className="h-4 w-4" />
+          <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white backdrop-blur-md">
+            <CameraIcon className="h-3.5 w-3.5" />
           </span>
           {uploading && (
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-[11px] text-white">
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-[10px] text-white">
               Đang tải...
             </span>
           )}
@@ -183,45 +235,35 @@ export default function ProfileEditor({
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
         <div className="mt-3 flex flex-col items-center">
-          <p className="text-lg font-bold text-[var(--foreground)]">{name || "Chưa đặt tên"}</p>
-          {saved && <p className="mt-1 text-xs font-medium text-emerald-600">Đã lưu thay đổi ✓</p>}
+          <p className="text-2xl font-bold text-white drop-shadow-sm">{name || "Chưa đặt tên"}</p>
+          {saved && <p className="mt-1 text-xs font-medium text-emerald-200">Đã lưu thay đổi ✓</p>}
         </div>
 
-        {tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {tags.map((t, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-[var(--brand-light)] px-3 py-1 text-xs font-semibold text-[var(--brand-dark)]"
-              >
-                {t.emoji ? `${t.emoji} ` : ""}
-                {t.label}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="mt-3">
+          <GlassTagRow tags={tags} />
+        </div>
 
         {!editing ? (
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-4 w-full max-w-xs rounded-xl border border-[var(--border)] bg-[var(--surface)] py-2.5 text-sm font-semibold text-[var(--foreground)] shadow-sm transition active:scale-[0.98] active:bg-black/5"
+            className="mt-4 w-full max-w-xs rounded-full border border-white/25 bg-white/10 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-xl transition active:scale-[0.98] active:bg-white/20"
           >
             Chỉnh sửa trang cá nhân
           </button>
         ) : (
-          <div className="mt-4 w-full max-w-xs">
-            <label className="mb-1 block text-xs font-medium text-[var(--muted)]">Tên hiển thị</label>
+          <div className="mt-4 w-full max-w-xs rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
+            <label className="mb-1 block text-xs font-medium text-white/70">Tên hiển thị</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Tên hiển thị"
               maxLength={30}
               autoFocus
-              className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]"
+              className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/50 focus:border-white/60"
             />
 
-            {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-2 text-sm text-red-100">{error}</p>}
 
             <div className="mt-3 flex gap-2">
               <button
@@ -231,7 +273,7 @@ export default function ProfileEditor({
                   setName(profile?.display_name ?? "");
                   setError(null);
                 }}
-                className="flex-1 rounded-xl border border-[var(--border)] py-2.5 text-sm font-medium text-[var(--foreground)] transition active:bg-black/5"
+                className="flex-1 rounded-xl border border-white/25 py-2.5 text-sm font-medium text-white transition active:bg-white/10"
               >
                 Hủy
               </button>
@@ -239,7 +281,7 @@ export default function ProfileEditor({
                 type="button"
                 onClick={handleSaveName}
                 disabled={saving}
-                className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-medium text-white transition hover:bg-[var(--brand-dark)] disabled:opacity-60"
+                className="flex-1 rounded-xl bg-white py-2.5 text-sm font-semibold text-[var(--brand-dark)] transition active:scale-[0.98] disabled:opacity-60"
               >
                 {saving ? "Đang lưu..." : "Lưu"}
               </button>
@@ -247,23 +289,9 @@ export default function ProfileEditor({
           </div>
         )}
 
-        {/* ---- Stats row ---- */}
-        {stats.length > 0 && (
-          <div className="mt-5 grid w-full max-w-sm grid-cols-3 gap-2">
-            {stats.map((s, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center gap-1 rounded-2xl bg-[var(--brand)]/95 px-2 py-3 text-white shadow-sm"
-              >
-                <div className="flex items-center gap-1">
-                  <StatIcon icon={s.icon} />
-                  <span className="text-base font-bold leading-none">{s.value}</span>
-                </div>
-                <span className="text-[11px] font-medium text-white/85">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="mt-6 w-full">
+          <GlassStatRow stats={stats} />
+        </div>
       </div>
     </div>
   );

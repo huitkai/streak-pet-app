@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
-import ProfileEditor, { type ProfileStatItem, type ProfileTagItem } from "@/components/ProfileEditor";
+import ProfileEditor, {
+  GlassStatRow,
+  GlassTagRow,
+  HeroBackground,
+  type ProfileStatItem,
+  type ProfileTagItem,
+} from "@/components/ProfileEditor";
 import ProfileHeaderActions from "@/components/ProfileHeaderActions";
-import Avatar from "@/components/Avatar";
 import PetAvatar from "@/components/PetAvatar";
-import { ArrowLeftIcon, FlameIcon, ImageIcon } from "@/components/icons";
+import { ArrowLeftIcon } from "@/components/icons";
 import { STAGE_LABEL, SPECIES_LABEL, variantForCouple, type PetSpecies } from "@/lib/pets";
 import type { PetAccessoryValue } from "@/lib/types";
 
@@ -92,89 +97,56 @@ export default async function ProfilePage({
   }
 
   return (
-    <div className="safe-top safe-bottom flex flex-1 flex-col bg-[var(--background)]">
-      <header className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between gap-2 px-2 py-2.5 safe-top">
-        <div className="flex min-w-0 items-center gap-2">
-          <Link
-            href="/"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-transform active:scale-90"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Link>
-        </div>
-        {isSelf && <ProfileHeaderActions />}
-      </header>
-
+    <div className="safe-bottom flex flex-1 flex-col bg-[var(--background)]">
       <div className="flex-1 overflow-y-auto">
-        {isSelf ? (
-          <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} />
-        ) : (
-          <div className="flex flex-col">
-            <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-[var(--brand-light)] via-[#ffc2d6] to-[var(--brand)]">
-              {targetProfile.banner_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={targetProfile.banner_url} alt="" className="h-full w-full object-cover" />
-              ) : targetProfile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={targetProfile.avatar_url}
-                  alt=""
-                  className="h-full w-full scale-125 object-cover opacity-70 blur-2xl"
-                />
-              ) : null}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/25" />
-            </div>
+        <div className="relative">
+          <header className="safe-top absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-2.5">
+            <Link
+              href="/"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Link>
+            {isSelf && <ProfileHeaderActions />}
+          </header>
 
-            <div className="-mt-12 flex flex-col items-center px-4 pb-2">
-              <div className="rounded-full ring-4 ring-[var(--background)]">
-                <Avatar url={targetProfile.avatar_url} name={targetProfile.display_name} size={96} />
-              </div>
-              <p className="mt-3 text-lg font-bold text-[var(--foreground)]">
-                {targetProfile.display_name || "Người ấy"}
-              </p>
+          {isSelf ? (
+            <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} />
+          ) : (
+            <div className="relative flex min-h-[640px] flex-col items-center overflow-hidden pb-8 pt-24">
+              <HeroBackground imageUrl={targetProfile.banner_url || targetProfile.avatar_url} />
 
-              {tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap justify-center gap-2">
-                  {tags.map((t, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full bg-[var(--brand-light)] px-3 py-1 text-xs font-semibold text-[var(--brand-dark)]"
-                    >
-                      {t.emoji ? `${t.emoji} ` : ""}
-                      {t.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {stats.length > 0 && (
-                <div className="mt-5 grid w-full max-w-sm grid-cols-3 gap-2">
-                  {stats.map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex flex-col items-center gap-1 rounded-2xl bg-[var(--brand)]/95 px-2 py-3 text-white shadow-sm"
-                    >
-                      <div className="flex items-center gap-1">
-                        {s.icon === "flame" ? (
-                          <FlameIcon className="h-4 w-4 text-orange-300" />
-                        ) : s.icon === "image" ? (
-                          <ImageIcon className="h-4 w-4 text-white/80" />
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white/80">
-                            <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                            <path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          </svg>
-                        )}
-                        <span className="text-base font-bold leading-none">{s.value}</span>
-                      </div>
-                      <span className="text-[11px] font-medium text-white/85">{s.label}</span>
+              <div className="flex flex-col items-center px-5">
+                <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg backdrop-blur-md">
+                  {targetProfile.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={targetProfile.avatar_url}
+                      alt={targetProfile.display_name ?? "avatar"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-white">
+                      {(targetProfile.display_name?.trim()?.[0] ?? "?").toUpperCase()}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+
+                <p className="mt-3 text-2xl font-bold text-white drop-shadow-sm">
+                  {targetProfile.display_name || "Người ấy"}
+                </p>
+
+                <div className="mt-3">
+                  <GlassTagRow tags={tags} />
+                </div>
+
+                <div className="mt-6 w-full">
+                  <GlassStatRow stats={stats} />
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {couple && species && (
           <div className="mx-4 mb-6 mt-2 flex flex-col items-center rounded-2xl bg-[var(--surface)] p-5 shadow-sm">
