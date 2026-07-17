@@ -367,7 +367,7 @@ export async function joinCouple(formData: FormData) {
 
 // ---------------- PROFILE / AVATAR ----------------
 
-export async function updateProfile(fields: { display_name?: string; avatar_url?: string }) {
+export async function updateProfile(fields: { display_name?: string; avatar_url?: string; banner_url?: string }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -380,6 +380,7 @@ export async function updateProfile(fields: { display_name?: string; avatar_url?
   if (error) return { error: error.message };
 
   revalidatePath("/chat");
+  revalidatePath(`/profile/${user.id}`);
   return { ok: true };
 }
 

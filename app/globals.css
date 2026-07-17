@@ -1,38 +1,14 @@
 @import "tailwindcss";
 
-/*
- * DESIGN SYSTEM v2 — "Aurora Glass"
- * Phong cách: hiện đại, năng động, gradient + glassmorphism.
- * Kiến trúc token 3 lớp: primitive -> semantic -> component.
- * Giữ đúng TÊN biến cũ (--background, --foreground, --brand, --brand-dark,
- * --brand-light, --surface, --border, --muted) để không phải sửa lại hàng
- * trăm chỗ dùng var(--...) rải rác trong toàn bộ component — chỉ đổi GIÁ TRỊ
- * và bổ sung biến mới cho gradient/glass/shadow.
- */
 :root {
-  /* --- Primitive: gradient 2 tông chủ đạo (hồng magenta -> tím indigo) --- */
-  --grad-start: #ff5da2;
-  --grad-mid: #c74bff;
-  --grad-end: #6a5cff;
-
-  /* --- Semantic (giữ tên cũ, đổi giá trị) --- */
-  --background: #f4f2ff;
-  --foreground: #201a30;
-  --brand: #d946a8;
-  --brand-dark: #a730c9;
-  --brand-light: #ffe1f3;
+  --background: #fff5f7;
+  --foreground: #2c2230;
+  --brand: #ec4f83;
+  --brand-dark: #c73868;
+  --brand-light: #ffe1ea;
   --surface: #ffffff;
-  --border: rgba(120, 60, 180, 0.14);
-  --muted: #7d7391;
-
-  /* --- Component: gradient, glass, shadow dùng chung --- */
-  --gradient-brand: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-mid) 55%, var(--grad-end) 100%);
-  --gradient-brand-soft: linear-gradient(135deg, rgba(255, 93, 162, 0.16), rgba(199, 75, 255, 0.14) 55%, rgba(106, 92, 255, 0.16));
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.45);
-  --shadow-glass: 0 8px 32px rgba(107, 60, 180, 0.14), 0 1px 1px rgba(107, 60, 180, 0.06);
-  --shadow-float: 0 10px 30px rgba(163, 48, 201, 0.28);
+  --border: #f3d9e2;
+  --muted: #8a7b85;
 }
 
 @theme inline {
@@ -41,50 +17,6 @@
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-brand-light: var(--brand-light);
-}
-
-/* Nền toàn app: gradient mesh nhẹ, cố định, cảm giác "năng động" nhưng
-   không gây rối khi đọc tin nhắn phía trên. */
-body {
-  background:
-    radial-gradient(circle at 12% 8%, rgba(255, 93, 162, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 6%, rgba(106, 92, 255, 0.22), transparent 40%),
-    radial-gradient(circle at 50% 100%, rgba(199, 75, 255, 0.16), transparent 55%),
-    var(--background);
-}
-
-/* Bề mặt kính (glassmorphism) dùng cho header, tab bar, sheet, thẻ nổi. */
-.glass-surface {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-color: var(--glass-border);
-}
-.glass-surface-strong {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border-color: var(--glass-border);
-}
-
-/* Nền gradient thương hiệu, dùng cho nút chính, bubble của mình, FAB. */
-.gradient-brand {
-  background: var(--gradient-brand);
-}
-.gradient-brand-soft {
-  background: var(--gradient-brand-soft);
-}
-.gradient-text {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.shadow-glass {
-  box-shadow: var(--shadow-glass);
-}
-.shadow-float {
-  box-shadow: var(--shadow-float);
 }
 
 * {
@@ -110,11 +42,11 @@ html {
 }
 
 body {
+  background: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif;
   height: 100dvh;
   overflow: hidden;
-  background-attachment: fixed;
 }
 
 .safe-top {
@@ -332,18 +264,9 @@ body {
   .animate-float-slow,
   .animate-flame-soft,
   .animate-streak-pop,
-  .animate-pet-excited,
-  .animate-pulse-ring {
+  .animate-pet-excited {
     animation: none !important;
   }
-}
-
-@keyframes pulse-ring {
-  0%, 100% { transform: scale(1); opacity: 0.55; }
-  50% { transform: scale(1.12); opacity: 0.9; }
-}
-.animate-pulse-ring {
-  animation: pulse-ring 2.2s ease-in-out infinite;
 }
 
 .thin-scroll::-webkit-scrollbar {

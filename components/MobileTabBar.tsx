@@ -26,12 +26,12 @@ export default function MobileTabBar({
   const isHome = pathname === "/" || pathname?.startsWith("/chat");
   const isProfile = pathname?.startsWith("/profile");
 
-  const btnClass = "flex h-11 w-11 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/10";
+  const btnClass = "flex h-11 w-11 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/5";
 
   return (
     <>
-      <nav className="glass-surface-strong safe-bottom flex shrink-0 items-center justify-around border-t shadow-glass md:hidden">
-        <Link href="/" aria-label="Trang chủ" className={btnClass} style={isHome ? { color: "var(--brand-dark)" } : undefined}>
+      <nav className="safe-bottom flex shrink-0 items-center justify-around border-t border-[var(--border)] bg-[var(--surface)] md:hidden">
+        <Link href="/" aria-label="Trang chủ" className={btnClass}>
           <HomeIcon className="h-6 w-6" filled={isHome} strokeWidth={2} />
         </Link>
         <button type="button" onClick={() => setSoon(true)} aria-label="Khám phá" className={btnClass}>
@@ -48,7 +48,7 @@ export default function MobileTabBar({
         </button>
         {myUserId ? (
           <Link href={`/profile/${myUserId}`} aria-label="Trang cá nhân" className="flex h-11 w-11 items-center justify-center active:scale-90">
-            <span className={isProfile ? "rounded-full p-[2px] gradient-brand" : "rounded-full p-[2px]"}>
+            <span className={isProfile ? "rounded-full ring-2 ring-[var(--foreground)] ring-offset-2 ring-offset-[var(--surface)]" : ""}>
               <Avatar url={avatarUrl} name={displayName} size={26} />
             </span>
           </Link>
@@ -61,14 +61,14 @@ export default function MobileTabBar({
         <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden" onClick={() => setSoon(false)}>
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div
-            className="glass-surface-strong safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl border p-6 text-center shadow-xl"
+            className="safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl bg-[var(--surface)] p-6 text-center shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm text-[var(--muted)]">Tính năng này đang được phát triển, quay lại sau nhé 💗</p>
             <button
               type="button"
               onClick={() => setSoon(false)}
-              className="gradient-brand mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-white shadow-float transition active:scale-95"
+              className="mt-4 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-semibold text-white transition active:scale-95"
             >
               Đã hiểu
             </button>

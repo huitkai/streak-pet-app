@@ -38,14 +38,14 @@ export default function DesktopNavRail({
 
   const itemClass = (active: boolean) =>
     `flex items-center gap-3.5 rounded-xl px-3 py-2.5 transition active:scale-[0.97] ${
-      active ? "gradient-brand-soft font-bold text-[var(--brand-dark)]" : "font-normal text-[var(--foreground)] hover:bg-black/[0.04]"
+      active ? "font-bold text-[var(--foreground)]" : "font-normal text-[var(--foreground)] hover:bg-black/5"
     }`;
 
   return (
-    <nav className="glass-surface-strong hidden lg:flex lg:w-[72px] xl:w-[244px] lg:shrink-0 lg:flex-col lg:border-r lg:px-2 lg:py-5">
+    <nav className="hidden lg:flex lg:w-[72px] xl:w-[244px] lg:shrink-0 lg:flex-col lg:border-r lg:border-[var(--border)] lg:bg-[var(--surface)] lg:px-2 lg:py-5">
       <Link href="/" className="mb-6 flex items-center gap-2 px-3 py-2" aria-label="Streak & Pet">
-        <PawIcon className="h-7 w-7 shrink-0 text-[var(--brand-dark)]" strokeWidth={1.6} />
-        <span className="gradient-text hidden text-2xl font-extrabold tracking-tight xl:inline">
+        <PawIcon className="h-7 w-7 shrink-0 text-[var(--brand)]" strokeWidth={1.6} />
+        <span className="hidden font-serif text-2xl italic tracking-tight text-[var(--foreground)] xl:inline">
           Streak&nbsp;Pet
         </span>
       </Link>
@@ -93,14 +93,14 @@ export default function DesktopNavRail({
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setSoon(false)}>
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div
-            className="glass-surface-strong relative w-full max-w-xs rounded-2xl border p-5 text-center shadow-xl"
+            className="relative w-full max-w-xs rounded-2xl bg-[var(--surface)] p-5 text-center shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm text-[var(--muted)]">Tính năng này đang được phát triển, quay lại sau nhé 💗</p>
             <button
               type="button"
               onClick={() => setSoon(false)}
-              className="gradient-brand mt-4 w-full rounded-xl py-2 text-sm font-semibold text-white shadow-float transition active:scale-95"
+              className="mt-4 w-full rounded-xl bg-[var(--brand)] py-2 text-sm font-semibold text-white transition active:scale-95"
             >
               Đã hiểu
             </button>

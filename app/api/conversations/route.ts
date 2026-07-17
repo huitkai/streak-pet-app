@@ -31,7 +31,7 @@ export async function GET() {
 
   const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
 
-  const [{ data: myProfile }, { data: partnerProfile }, { data: streak }, { data: lastMsg }, { data: myRead }, { data: lastInstant }] =
+  const [{ data: myProfile }, { data: partnerProfile }, { data: streak }, { data: lastMsg }, { data: myRead }] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       partnerId
@@ -51,18 +51,6 @@ export async function GET() {
         .eq("couple_id", couple.id)
         .eq("user_id", user.id)
         .maybeSingle(),
-      partnerId
-        ? supabase
-            .from("messages")
-            .select("created_at")
-            .eq("couple_id", couple.id)
-            .eq("sender_id", partnerId)
-            .ilike("content", "::stampphoto::%")
-            .gt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
     ]);
 
   let conversations: ConversationSummary[] = [];
@@ -93,10 +81,6 @@ export async function GET() {
         themeColor: couple.theme_color ?? DEFAULT_THEME_COLOR,
         isPinned: (couple.user1_id === user.id ? couple.pinned_by_user1 : couple.pinned_by_user2) ?? false,
         isMuted: (couple.user1_id === user.id ? couple.muted_by_user1 : couple.muted_by_user2) ?? false,
-        hasInstant: Boolean(lastInstant?.created_at),
-        hasUnseenInstant: Boolean(
-          lastInstant?.created_at && lastInstant.created_at > (myRead?.last_read_at ?? "1970-01-01T00:00:00Z")
-        ),
       },
     ];
   }

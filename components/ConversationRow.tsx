@@ -78,7 +78,7 @@ export default function ConversationRow({
           type="button"
           onClick={handlePin}
           style={{ width: ACTION_WIDTH }}
-          className="gradient-brand flex h-full flex-col items-center justify-center gap-1 text-white active:brightness-95"
+          className="flex h-full flex-col items-center justify-center gap-1 bg-[var(--brand)] text-white active:brightness-95"
         >
           <PinIcon className="h-5 w-5" filled={isPinned} />
           <span className="text-[10px] font-semibold">{isPinned ? "Đã ghim" : "Ghim"}</span>
@@ -109,24 +109,16 @@ export default function ConversationRow({
             }
             router.push("/chat");
           }}
-          className="flex items-center gap-3 px-4 py-3 transition active:bg-black/[0.04]"
+          className="flex items-center gap-3 px-4 py-3 transition active:bg-black/5"
         >
-          <span
-            className={`relative shrink-0 rounded-full p-[2px] ${
-              conversation.hasUnseenInstant
-                ? "gradient-brand"
-                : conversation.hasInstant
-                  ? "bg-black/15"
-                  : ""
-            }`}
-          >
+          <span className="relative shrink-0">
             <Avatar
               url={conversation.partnerProfile?.avatar_url}
               name={conversation.nickname || conversation.petName}
-              size={48}
+              size={52}
             />
             {isOnline && (
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--surface)] bg-emerald-400" />
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--surface)] bg-green-500" />
             )}
           </span>
 
@@ -161,7 +153,7 @@ export default function ConversationRow({
                 {conversation.previewText}
               </p>
               {hasUnread && !isMuted && (
-                <span className="gradient-brand flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white shadow-float">
+                <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] px-1.5 text-[10px] font-bold text-white">
                   {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                 </span>
               )}
