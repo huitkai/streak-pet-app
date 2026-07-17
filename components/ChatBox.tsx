@@ -36,7 +36,6 @@ import EmojiFullPicker from "@/components/EmojiFullPicker";
 import MessageActionDock from "@/components/MessageActionDock";
 import { ReplyQuoteInline, ReplyComposerBar } from "@/components/ReplyQuote";
 import PinnedBar from "@/components/PinnedBar";
-import SearchOverlay from "@/components/SearchOverlay";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import InstantCapture from "@/components/InstantCapture";
 import VoiceMessageBubble from "@/components/VoiceMessageBubble";
@@ -48,7 +47,6 @@ import {
   CameraIcon,
   XIcon,
   PlusIcon,
-  SearchIcon,
   MicIcon,
   EditIcon,
   UndoIcon,
@@ -265,7 +263,6 @@ export default function ChatBox({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState((cached?.messages.length ?? 0) >= PAGE_SIZE);
@@ -1613,16 +1610,6 @@ export default function ChatBox({
           </div>
         </div>
 
-        {/* Nút tìm kiếm nổi — mở lớp phủ tìm trong toàn bộ lịch sử chat. */}
-        <button
-          type="button"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Tìm kiếm trong đoạn chat"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface)]/90 text-[var(--foreground)] shadow-md backdrop-blur active:scale-95"
-        >
-          <SearchIcon className="h-4.5 w-4.5" />
-        </button>
-
         <FloatingPet species={species} stage={pet.stage} mood={pet.mood} variant={variant} accessory={accessory} bumpKey={messages.length} />
       </div>
 
@@ -1662,17 +1649,6 @@ export default function ChatBox({
 
       {forwardMessageId && (
         <ForwardSheet messageId={forwardMessageId} currentCoupleId={coupleId} onClose={() => setForwardMessageId(null)} />
-      )}
-
-      {searchOpen && (
-        <SearchOverlay
-          coupleId={coupleId}
-          onClose={() => setSearchOpen(false)}
-          onJump={(m) => {
-            setSearchOpen(false);
-            jumpToMessage(m);
-          }}
-        />
       )}
 
       {instantCaptureOpen && (

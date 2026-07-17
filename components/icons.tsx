@@ -532,6 +532,15 @@ export function PhoneIcon({ className = "w-5 h-5", strokeWidth = 1.8, filled = f
   );
 }
 
+export function VideoIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <rect x="3" y="6.5" width="13" height="11" rx="2.5" />
+      <path d="M16 10.2 21 7v10l-5-3.2Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ChatBubbleIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>

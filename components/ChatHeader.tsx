@@ -10,7 +10,7 @@ import PetSheet from "@/components/PetSheet";
 import ChatSettingsSheet from "@/components/ChatSettingsSheet";
 import PetEvolutionCelebration from "@/components/PetEvolutionCelebration";
 import Avatar from "@/components/Avatar";
-import { ArrowLeftIcon, MoreIcon } from "@/components/icons";
+import { ArrowLeftIcon, MoreIcon, PhoneIcon, VideoIcon } from "@/components/icons";
 import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
 import { useChatTheme } from "@/lib/chat-theme-context";
 
@@ -161,6 +161,22 @@ export default function ChatHeader({
             </span>
           </div>
         </Link>
+
+        <button
+          type="button"
+          aria-label="Gọi thoại"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
+        >
+          <PhoneIcon className="h-[19px] w-[19px]" strokeWidth={1.8} />
+        </button>
+
+        <button
+          type="button"
+          aria-label="Gọi video"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
+        >
+          <VideoIcon className="h-[19px] w-[19px]" strokeWidth={1.8} />
+        </button>
 
         <button
           type="button"
