@@ -84,13 +84,13 @@ export default function ChatSettingsSheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/35 animate-pop-in" onClick={onClose} aria-hidden />
-      <div className="safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl bg-[var(--surface)] p-5 shadow-xl max-h-[88vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-black/50 animate-pop-in" onClick={onClose} aria-hidden />
+      <div className="glass-strong safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl p-5 shadow-xl max-h-[88vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
           aria-label="Đóng"
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[var(--muted)]"
+          className="glass-pill absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)]"
         >
           <XIcon className="h-4 w-4" />
         </button>
@@ -101,7 +101,7 @@ export default function ChatSettingsSheet({
         </p>
 
         {/* ---- Màu chủ đề ---- */}
-        <section className="mt-5">
+        <section className="glass-panel mt-5 rounded-2xl p-3.5">
           <p className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold text-[var(--muted)]">
             <PaletteIcon className="h-3.5 w-3.5" /> Màu chủ đề
           </p>
@@ -115,7 +115,7 @@ export default function ChatSettingsSheet({
                   onClick={() => applyColor(preset.hex)}
                   aria-label={preset.label}
                   className={`relative flex flex-col items-center gap-1 rounded-xl py-2.5 transition active:scale-95 ${
-                    selected ? "bg-black/5 ring-2 ring-offset-1" : ""
+                    selected ? "bg-white/10 ring-2 ring-offset-1 ring-offset-transparent" : ""
                   }`}
                   style={selected ? ({ ["--tw-ring-color" as string]: preset.hex } as never) : undefined}
                 >
@@ -135,7 +135,7 @@ export default function ChatSettingsSheet({
 
           <div className="mt-3 flex items-center gap-2">
             <span
-              className="h-8 w-8 shrink-0 rounded-full border border-black/10 shadow-sm"
+              className="h-8 w-8 shrink-0 rounded-full border border-white/15 shadow-sm"
               style={{ background: isValidHex(customHex) ? customHex : "transparent" }}
               aria-hidden
             />
@@ -145,26 +145,27 @@ export default function ChatSettingsSheet({
               onChange={(e) => setCustomHex(e.target.value)}
               placeholder="#rrggbb"
               maxLength={7}
-              className="min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm font-medium tracking-wide text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="glass-pill min-w-0 flex-1 rounded-xl px-3 py-2 text-sm font-medium tracking-wide text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             />
             <button
               type="button"
               onClick={handleCustomHexSubmit}
-              className="shrink-0 rounded-xl bg-[var(--brand)] px-3.5 py-2 text-sm font-semibold text-white transition active:scale-95"
+              className="shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold text-white transition active:scale-95"
+              style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" }}
             >
               Áp dụng
             </button>
           </div>
-          {themeError && <p className="mt-1.5 px-0.5 text-[11px] text-red-500">{themeError}</p>}
+          {themeError && <p className="mt-1.5 px-0.5 text-[11px] text-[var(--danger)]">{themeError}</p>}
           {themeSaved && !themeError && (
-            <p className="mt-1.5 flex items-center gap-1 px-0.5 text-[11px] font-medium text-green-600">
+            <p className="mt-1.5 flex items-center gap-1 px-0.5 text-[11px] font-medium text-emerald-400">
               <CheckIcon className="h-3 w-3" /> Đã lưu màu chủ đề
             </p>
           )}
         </section>
 
         {/* ---- Biệt danh ---- */}
-        <section className="mt-6">
+        <section className="glass-panel mt-4 rounded-2xl p-3.5">
           <p className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold text-[var(--muted)]">
             <EditIcon className="h-3.5 w-3.5" /> Biệt danh cho {partnerRealName || "đối phương"}
           </p>
@@ -175,12 +176,13 @@ export default function ChatSettingsSheet({
               onChange={(e) => setNickname(e.target.value)}
               placeholder={partnerRealName || "Người ấy"}
               maxLength={40}
-              className="min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="glass-pill min-w-0 flex-1 rounded-xl px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             />
             <button
               type="button"
               onClick={handleSaveNickname}
-              className="shrink-0 rounded-xl bg-[var(--brand)] px-3.5 py-2 text-sm font-semibold text-white transition active:scale-95"
+              className="shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold text-white transition active:scale-95"
+              style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" }}
             >
               Lưu
             </button>
@@ -188,9 +190,9 @@ export default function ChatSettingsSheet({
           <p className="mt-1.5 px-0.5 text-[11px] text-[var(--muted)]">
             Chỉ mình bạn thấy biệt danh này — để trống để dùng lại tên gốc.
           </p>
-          {nicknameError && <p className="mt-1 px-0.5 text-[11px] text-red-500">{nicknameError}</p>}
+          {nicknameError && <p className="mt-1 px-0.5 text-[11px] text-[var(--danger)]">{nicknameError}</p>}
           {nicknameSaved && !nicknameError && (
-            <p className="mt-1 flex items-center gap-1 px-0.5 text-[11px] font-medium text-green-600">
+            <p className="mt-1 flex items-center gap-1 px-0.5 text-[11px] font-medium text-emerald-400">
               <CheckIcon className="h-3 w-3" /> Đã lưu biệt danh
             </p>
           )}

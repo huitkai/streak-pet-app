@@ -1320,7 +1320,7 @@ export default function ChatBox({
                             className="fixed inset-0 z-40 cursor-default"
                           />
                           <div
-                            className={`animate-pop-in absolute bottom-full z-50 mb-1.5 w-72 max-w-[85vw] rounded-2xl bg-[var(--surface)] p-2 shadow-lg ring-1 ring-black/5 ${
+                            className={`animate-pop-in absolute bottom-full z-50 mb-1.5 w-72 max-w-[85vw] rounded-2xl glass-strong p-2 shadow-lg ring-1 ring-white/10 ${
                               mine ? "right-0" : "left-0"
                             }`}
                             style={{ transformOrigin: mine ? "bottom right" : "bottom left" }}
@@ -1342,7 +1342,7 @@ export default function ChatBox({
                         <div
                           onClick={() => handleBubbleClick(m.id)}
                           className={`select-none rounded-2xl px-3.5 py-2 text-sm italic text-[var(--muted)] ${
-                            mine ? "rounded-br-md bg-black/5" : "rounded-bl-md bg-black/5"
+                            mine ? "rounded-br-md bg-white/5" : "rounded-bl-md bg-white/5"
                           }`}
                         >
                           <UndoIcon className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
@@ -1382,7 +1382,7 @@ export default function ChatBox({
                               src={decoded.url}
                               alt="Ảnh đã gửi"
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
-                              className="max-h-72 w-full bg-black/5"
+                              className="max-h-72 w-full bg-white/5"
                               imgClassName="max-h-72 w-full object-cover"
                               onSettled={handleImageSettled}
                             />
@@ -1463,7 +1463,7 @@ export default function ChatBox({
                               src={decoded.url}
                               alt="GIF đã gửi"
                               aspectRatio={decoded.width && decoded.height ? `${decoded.width} / ${decoded.height}` : undefined}
-                              className="max-h-72 w-full bg-black/5"
+                              className="max-h-72 w-full bg-white/5"
                               imgClassName="max-h-72 w-full object-cover"
                               onSettled={handleImageSettled}
                             />
@@ -1493,7 +1493,7 @@ export default function ChatBox({
                           onPointerLeave={cancelLongPress}
                           onClick={() => handleBubbleClick(m.id)}
                           className={`animate-bubble-in pointer-events-auto select-none rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm ${
-                            mine ? "rounded-br-md bg-[var(--brand)] text-white" : "rounded-bl-md bg-[#f4eef0] text-[var(--foreground)]"
+                            mine ? "rounded-br-md bg-[var(--brand)] text-white" : "rounded-bl-md glass-panel text-[var(--foreground)]"
                           } ${m.pending ? "opacity-60" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
                         >
                           {replyTarget && <ReplyQuoteInline message={replyTarget} mine={mine} onJump={() => jumpToMessage(replyTarget)} />}
@@ -1510,7 +1510,7 @@ export default function ChatBox({
 
                       {reactionEntries.length > 0 && (
                         <div
-                          className={`absolute -bottom-2.5 flex items-center rounded-full bg-[var(--surface)] px-1 py-0.5 text-[11px] shadow ring-1 ring-black/5 ${
+                          className={`absolute -bottom-2.5 flex items-center rounded-full bg-[var(--surface)] px-1 py-0.5 text-[11px] shadow ring-1 ring-white/10 ${
                             mine ? "right-1" : "left-1"
                           }`}
                         >
@@ -1601,7 +1601,7 @@ export default function ChatBox({
                 <div className="w-6 shrink-0">
                   <Avatar url={partnerProfile?.avatar_url} name={partnerProfile?.display_name} size={24} />
                 </div>
-                <div className="animate-bubble-in flex items-center gap-1 rounded-2xl rounded-bl-md bg-[#f4eef0] px-3.5 py-2.5">
+                <div className="animate-bubble-in flex items-center gap-1 rounded-2xl rounded-bl-md glass-panel px-3.5 py-2.5">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:-0.3s]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:-0.15s]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" />
@@ -1679,7 +1679,7 @@ export default function ChatBox({
         <InstantCapture onCapture={handleStampCapture} onClose={() => setInstantCaptureOpen(false)} />
       )}
 
-      <div className="safe-bottom relative z-10 border-t border-[var(--border)] bg-[var(--surface)] px-2.5 py-2">
+      <div className="safe-bottom relative z-10 glass-strong px-2.5 py-2">
         {pickerOpen && (
           <StickerPicker
             onSelectSticker={handlePickSticker}
@@ -1715,7 +1715,7 @@ export default function ChatBox({
             <>
               <button type="button" aria-label="Đóng" onClick={() => setAttachOpen(false)} className="fixed inset-0 z-0 cursor-default" />
               <div
-                className="animate-pop-in absolute bottom-full left-0 z-10 mb-2 flex gap-2 rounded-2xl bg-[var(--surface)] p-2 shadow-lg ring-1 ring-black/5"
+                className="animate-pop-in absolute bottom-full left-0 z-10 mb-2 flex gap-2 rounded-2xl glass-strong p-2 shadow-lg ring-1 ring-white/10"
                 style={{ transformOrigin: "bottom left" }}
               >
                 <button
@@ -1724,7 +1724,7 @@ export default function ChatBox({
                     setAttachOpen(false);
                     fileInputRef.current?.click();
                   }}
-                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-black/5"
+                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/10"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
                     <ImageIcon className="h-5 w-5" />
@@ -1737,7 +1737,7 @@ export default function ChatBox({
                     setAttachOpen(false);
                     setInstantCaptureOpen(true);
                   }}
-                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-black/5"
+                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/10"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
                     <CameraIcon className="h-5 w-5" />
@@ -1750,7 +1750,7 @@ export default function ChatBox({
                     setAttachOpen(false);
                     setPickerOpen((v) => !v);
                   }}
-                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-black/5"
+                  className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/10"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
                     <SmileStickerIcon className="h-5 w-5" />
@@ -1784,7 +1784,7 @@ export default function ChatBox({
                 onChange={(e) => handleTextChange(e.target.value)}
                 onFocus={() => setAttachOpen(false)}
                 placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
-                className="min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[#fbf7f8] px-3.5 py-2 text-sm outline-none focus:border-[var(--brand)]"
+                className="min-w-0 flex-1 rounded-full border border-[var(--border)] bg-white/5 px-3.5 py-2 text-sm outline-none focus:border-[var(--brand)]"
               />
               {text.trim() ? (
                 <button
