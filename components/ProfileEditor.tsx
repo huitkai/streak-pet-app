@@ -3,12 +3,12 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile } from "@/lib/actions";
-import { CameraIcon, FlameIcon, ImageIcon } from "@/components/icons";
+import { CameraIcon, FlameIcon, ImageIcon, SparkleIcon } from "@/components/icons";
 import type { ProfileRow } from "@/lib/types";
 
 export interface ProfileStatItem {
-  icon: "flame" | "calendar" | "image";
-  value: number;
+  icon: "flame" | "calendar" | "image" | "stage";
+  value: number | string;
   label: string;
 }
 
@@ -20,6 +20,7 @@ export interface ProfileTagItem {
 function StatIcon({ icon }: { icon: ProfileStatItem["icon"] }) {
   if (icon === "flame") return <FlameIcon className="h-4 w-4 text-orange-200" />;
   if (icon === "image") return <ImageIcon className="h-4 w-4 text-white/85" />;
+  if (icon === "stage") return <SparkleIcon className="h-4 w-4 text-white/85" />;
   return (
     <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white/85">
       <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -28,17 +29,25 @@ function StatIcon({ icon }: { icon: ProfileStatItem["icon"] }) {
   );
 }
 
-export function GlassStatRow({ stats }: { stats: ProfileStatItem[] }) {
+/** Dải card thống kê — mỗi chỉ số là MỘT card kính riêng biệt (không còn chung
+ * khung), có thể cuộn ngang, đúng tinh thần khối "Sessions / Age / Videos"
+ * trong mẫu tham khảo thay vì một hàng chia cột đơn điệu như trước. */
+export function GlassStatCards({ stats }: { stats: ProfileStatItem[] }) {
   if (stats.length === 0) return null;
   return (
-    <div className="grid w-full max-w-sm grid-cols-3 gap-2 rounded-3xl border border-white/25 bg-white/10 p-2 shadow-lg backdrop-blur-xl">
+    <div className="scrollbar-none -mx-5 flex w-[calc(100%+2.5rem)] gap-2.5 overflow-x-auto px-5 pb-1">
       {stats.map((s, i) => (
-        <div key={i} className="flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-white">
+        <div
+          key={i}
+          className="flex min-w-[92px] shrink-0 flex-col items-center gap-1.5 rounded-[22px] border border-white/20 bg-white/12 px-4 py-3.5 text-white shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+        >
           <div className="flex items-center gap-1.5">
             <StatIcon icon={s.icon} />
-            <span className="text-base font-bold leading-none">{s.value.toLocaleString("vi-VN")}</span>
+            <span className="text-base font-bold leading-none">
+              {typeof s.value === "number" ? s.value.toLocaleString("vi-VN") : s.value}
+            </span>
           </div>
-          <span className="text-[11px] font-medium text-white/80">{s.label}</span>
+          <span className="text-[11px] font-medium text-white/75">{s.label}</span>
         </div>
       ))}
     </div>
@@ -52,7 +61,7 @@ export function GlassTagRow({ tags }: { tags: ProfileTagItem[] }) {
       {tags.map((t, i) => (
         <span
           key={i}
-          className="rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-xl"
+          className="rounded-full border border-white/25 bg-white/12 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm backdrop-blur-xl"
         >
           {t.emoji ? `${t.emoji} ` : ""}
           {t.label}
@@ -62,8 +71,45 @@ export function GlassTagRow({ tags }: { tags: ProfileTagItem[] }) {
   );
 }
 
+/** Dòng số liệu nổi bật phía trên tên, cùng nhịp với "24.978 Followers" trong
+ * mẫu — một con số lớn đi kèm nhãn nhỏ, kể câu chuyện quan trọng nhất trước
+ * khi người xem đọc tới tên. */
+export function HeroEyebrow({ value, label }: { value: number | string; label: string }) {
+  return (
+    <p className="flex items-baseline gap-1.5 text-white/90 drop-shadow-sm">
+      <span className="text-xl font-bold">{typeof value === "number" ? value.toLocaleString("vi-VN") : value}</span>
+      <span className="text-[13px] font-medium text-white/70">{label}</span>
+    </p>
+  );
+}
+
+/** Huy hiệu tròn nhỏ đè lên mép dưới ảnh nền — tương đương chiếc icon hoa có
+ * sparkle trong mẫu tham khảo. Với chủ tài khoản đây cũng là nút đổi ảnh. */
+export function HeroBadge({
+  children,
+  onClick,
+  label,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  label?: string;
+}) {
+  const Comp = onClick ? "button" : "div";
+  return (
+    <Comp
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      aria-label={label}
+      className="relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/70 bg-gradient-to-br from-white/40 to-white/10 text-white shadow-lg backdrop-blur-md transition active:scale-90"
+    >
+      {children}
+    </Comp>
+  );
+}
+
 /** Nền hero full-bleed: ảnh bìa/avatar mờ dần (mask fade) hoà vào gradient
- * thương hiệu phía dưới, giống hiệu ứng ảnh mờ→màu trong mẫu tham khảo. */
+ * xanh→hồng thương hiệu phía dưới, giống hiệu ứng ảnh mờ→màu trong mẫu tham
+ * khảo, và trải dài hết vùng tên/tag/thống kê chứ không dừng lại ở mép ảnh. */
 export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
   return (
     <div className="absolute inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
@@ -72,10 +118,10 @@ export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
         <img
           src={imageUrl}
           alt=""
-          className="absolute inset-x-0 top-0 h-[70%] w-full object-cover opacity-95"
+          className="absolute inset-x-0 top-0 h-[62%] w-full object-cover opacity-95"
           style={{
-            maskImage: "linear-gradient(to bottom, black 35%, transparent 92%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 35%, transparent 92%)",
+            maskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
           }}
         />
       )}
@@ -89,11 +135,13 @@ export default function ProfileEditor({
   profile,
   stats,
   tags,
+  eyebrow,
 }: {
   userId: string;
   profile: ProfileRow | null;
   stats: ProfileStatItem[];
   tags: ProfileTagItem[];
+  eyebrow?: { value: number | string; label: string } | null;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
@@ -187,7 +235,7 @@ export default function ProfileEditor({
   }
 
   return (
-    <div className="relative flex min-h-[640px] flex-col items-center overflow-hidden pb-8 pt-24">
+    <div className="relative flex min-h-[680px] flex-col items-center overflow-hidden pb-8 pt-24">
       <HeroBackground imageUrl={bannerUrl || avatarUrl} />
 
       {/* Nút đổi ảnh bìa, đặt kín đáo góc phải để không đè lên avatar/tên */}
@@ -206,36 +254,28 @@ export default function ProfileEditor({
         </span>
       )}
 
-      <div className="flex flex-col items-center px-5">
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="relative active:scale-95"
-          aria-label="Đổi ảnh đại diện"
-        >
-          <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg backdrop-blur-md">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={name || "avatar"} className="h-full w-full object-cover" />
+      <div className="flex flex-1 flex-col items-center justify-end px-5 pt-40">
+        <button type="button" onClick={() => fileRef.current?.click()} aria-label="Đổi ảnh đại diện">
+          <HeroBadge>
+            {uploading ? (
+              <span className="text-[9px] font-semibold">...</span>
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-white">
-                {(name?.trim()?.[0] ?? "?").toUpperCase()}
-              </div>
+              <CameraIcon className="h-5 w-5" />
             )}
-          </div>
-          <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white backdrop-blur-md">
-            <CameraIcon className="h-3.5 w-3.5" />
-          </span>
-          {uploading && (
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-[10px] text-white">
-              Đang tải...
-            </span>
-          )}
+          </HeroBadge>
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
-        <div className="mt-3 flex flex-col items-center">
-          <p className="text-2xl font-bold text-white drop-shadow-sm">{name || "Chưa đặt tên"}</p>
+        {eyebrow && (
+          <div className="mt-3">
+            <HeroEyebrow value={eyebrow.value} label={eyebrow.label} />
+          </div>
+        )}
+
+        <div className="mt-1.5 flex flex-col items-center">
+          <p className="text-[26px] font-bold leading-tight text-white drop-shadow-sm">
+            {name || "Chưa đặt tên"}
+          </p>
           {saved && <p className="mt-1 text-xs font-medium text-emerald-200">Đã lưu thay đổi ✓</p>}
         </div>
 
@@ -247,12 +287,12 @@ export default function ProfileEditor({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-4 w-full max-w-xs rounded-full border border-white/25 bg-white/10 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-xl transition active:scale-[0.98] active:bg-white/20"
+            className="mt-4 w-full max-w-xs rounded-full border border-white/25 bg-white/12 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-xl transition active:scale-[0.98] active:bg-white/20"
           >
             Chỉnh sửa trang cá nhân
           </button>
         ) : (
-          <div className="mt-4 w-full max-w-xs rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
+          <div className="mt-4 w-full max-w-xs rounded-2xl border border-white/20 bg-white/12 p-3 backdrop-blur-xl">
             <label className="mb-1 block text-xs font-medium text-white/70">Tên hiển thị</label>
             <input
               value={name}
@@ -289,9 +329,14 @@ export default function ProfileEditor({
           </div>
         )}
 
-        <div className="mt-6 w-full">
-          <GlassStatRow stats={stats} />
-        </div>
+        {stats.length > 0 && (
+          <div className="mt-7 w-full max-w-sm">
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/60">
+              Thống kê
+            </p>
+            <GlassStatCards stats={stats} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -56,6 +56,14 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes pet-breathe {
   0%, 100% { transform: scale(var(--pet-scale, 1)) translateY(0); }
   50% { transform: scale(calc(var(--pet-scale, 1) * 1.015)) translateY(-2px); }

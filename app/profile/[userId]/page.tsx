@@ -2,16 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import ProfileEditor, {
-  GlassStatRow,
+  GlassStatCards,
   GlassTagRow,
+  HeroBadge,
   HeroBackground,
+  HeroEyebrow,
   type ProfileStatItem,
   type ProfileTagItem,
 } from "@/components/ProfileEditor";
 import ProfileHeaderActions from "@/components/ProfileHeaderActions";
-import PetAvatar from "@/components/PetAvatar";
-import { ArrowLeftIcon } from "@/components/icons";
-import { STAGE_LABEL, SPECIES_LABEL, variantForCouple, type PetSpecies } from "@/lib/pets";
+import PetShowcaseCard from "@/components/PetShowcaseCard";
+import { ArrowLeftIcon, PawIcon } from "@/components/icons";
+import { STAGE_ORDER, type PetSpecies } from "@/lib/pets";
 import type { PetAccessoryValue } from "@/lib/types";
 
 export default async function ProfilePage({
@@ -82,18 +84,32 @@ export default async function ProfilePage({
     );
   }
 
+  // Con số nổi bật phía trên tên (nhịp giống "24.978 Followers" trong mẫu):
+  // số ngày cùng nhau — chỉ số cảm xúc nhất trong app cặp đôi này.
+  const eyebrow = couple ? { value: activeDays, label: "ngày bên nhau" } : null;
+
+  // Hàng card thống kê bên dưới tên: cố tình KHÔNG lặp lại "ngày bên nhau" ở
+  // trên, để mỗi card mang một lát cắt riêng — giống Sessions/Age/Videos.
   const stats: ProfileStatItem[] = couple
     ? [
-        { icon: "flame", value: streakCurrent, label: "Chuỗi" },
-        { icon: "calendar", value: activeDays, label: "Ngày hoạt động" },
-        { icon: "image", value: photoCount, label: "Ảnh" },
+        { icon: "flame", value: streakCurrent, label: "Chuỗi ngày" },
+        { icon: "image", value: photoCount, label: "Ảnh đã gửi" },
+        {
+          icon: "stage",
+          value: `${STAGE_ORDER.indexOf((petStage as (typeof STAGE_ORDER)[number]) || "egg") + 1}/5`,
+          label: "Cấp độ thú cưng",
+        },
       ]
     : [];
 
   const tags: ProfileTagItem[] = [];
+  if (isSelf) {
+    tags.push({ label: isPartner || couple ? "Đã ghép cặp" : "Đang độc thân" });
+  } else {
+    tags.push({ label: "Đối tác của bạn" });
+  }
   if (couple && species) {
-    tags.push({ emoji: "🐾", label: `${couple.pet_name} · ${SPECIES_LABEL[species]}` });
-    if (petStage) tags.push({ label: STAGE_LABEL[petStage as keyof typeof STAGE_LABEL] });
+    tags.push({ emoji: "🐾", label: couple.pet_name });
   }
 
   return (
@@ -111,28 +127,23 @@ export default async function ProfilePage({
           </header>
 
           {isSelf ? (
-            <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} />
+            <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} eyebrow={eyebrow} />
           ) : (
-            <div className="relative flex min-h-[640px] flex-col items-center overflow-hidden pb-8 pt-24">
+            <div className="relative flex min-h-[680px] flex-col items-center overflow-hidden pb-8 pt-24">
               <HeroBackground imageUrl={targetProfile.banner_url || targetProfile.avatar_url} />
 
-              <div className="flex flex-col items-center px-5">
-                <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg backdrop-blur-md">
-                  {targetProfile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={targetProfile.avatar_url}
-                      alt={targetProfile.display_name ?? "avatar"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-white">
-                      {(targetProfile.display_name?.trim()?.[0] ?? "?").toUpperCase()}
-                    </div>
-                  )}
-                </div>
+              <div className="flex flex-1 flex-col items-center justify-end px-5 pt-40">
+                <HeroBadge label="Thú cưng chung">
+                  <PawIcon className="h-5 w-5" />
+                </HeroBadge>
 
-                <p className="mt-3 text-2xl font-bold text-white drop-shadow-sm">
+                {eyebrow && (
+                  <div className="mt-3">
+                    <HeroEyebrow value={eyebrow.value} label={eyebrow.label} />
+                  </div>
+                )}
+
+                <p className="mt-1.5 text-[26px] font-bold leading-tight text-white drop-shadow-sm">
                   {targetProfile.display_name || "Người ấy"}
                 </p>
 
@@ -140,35 +151,29 @@ export default async function ProfilePage({
                   <GlassTagRow tags={tags} />
                 </div>
 
-                <div className="mt-6 w-full">
-                  <GlassStatRow stats={stats} />
-                </div>
+                {stats.length > 0 && (
+                  <div className="mt-7 w-full max-w-sm">
+                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/60">
+                      Thống kê
+                    </p>
+                    <GlassStatCards stats={stats} />
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
         {couple && species && (
-          <div className="mx-4 mb-6 mt-2 flex flex-col items-center rounded-2xl bg-[var(--surface)] p-5 shadow-sm">
-            <p className="mb-3 text-xs font-semibold text-[var(--muted)]">
-              {isSelf ? "Đang cùng nuôi" : `Đang nuôi cùng bạn`}
-            </p>
-            <PetAvatar
-              species={species}
-              stage={(petStage as "egg" | "baby" | "teen" | "adult" | "legendary") || "egg"}
-              mood="happy"
-              variant={couple ? variantForCouple(couple.id, species) : "radiant"}
-              accessory={(couple?.pet_accessory as PetAccessoryValue) ?? "none"}
-              size={80}
-              interactive={false}
-            />
-            <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">
-              {couple.pet_name} · {SPECIES_LABEL[species]}
-            </p>
-            <p className="text-xs text-[var(--muted)]">
-              {petStage ? STAGE_LABEL[petStage as keyof typeof STAGE_LABEL] : ""}
-            </p>
-          </div>
+          <PetShowcaseCard
+            coupleId={couple.id}
+            petName={couple.pet_name}
+            species={species}
+            stage={(petStage as "egg" | "baby" | "teen" | "adult" | "legendary") || "egg"}
+            accessory={(couple.pet_accessory as PetAccessoryValue) ?? "none"}
+            activeDays={activeDays}
+            isSelf={isSelf}
+          />
         )}
       </div>
     </div>
