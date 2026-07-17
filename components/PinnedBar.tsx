@@ -43,11 +43,11 @@ export default function PinnedBar({
       </button>
 
       {expanded && (
-        <div className="thin-scroll max-h-52 overflow-y-auto border-t border-black/5 bg-[var(--surface)]">
+        <div className="thin-scroll max-h-52 overflow-y-auto border-t border-white/10 bg-[var(--surface)]">
           {[...pins].reverse().map((p) => {
             const msg = messageMap.get(p.message_id);
             return (
-              <div key={p.message_id} className="flex items-center gap-2 px-3 py-2 active:bg-black/5">
+              <div key={p.message_id} className="flex items-center gap-2 px-3 py-2 active:bg-white/10">
                 <button
                   type="button"
                   onClick={() => {
@@ -62,7 +62,7 @@ export default function PinnedBar({
                   type="button"
                   onClick={() => onUnpin(p.message_id)}
                   aria-label="Bỏ ghim"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/5 text-[var(--muted)]"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[var(--muted)]"
                 >
                   <XIcon className="h-3.5 w-3.5" />
                 </button>

@@ -21,7 +21,7 @@ export function ReplyQuoteInline({
       className={`mb-1.5 block w-full truncate rounded-lg border-l-2 px-2 py-1 text-left text-[11px] ${
         mine
           ? "border-white/50 bg-white/10 text-white/85"
-          : "border-[var(--brand)] bg-black/5 text-[var(--muted)]"
+          : "border-[var(--brand)] bg-white/10 text-[var(--muted)]"
       }`}
     >
       {message ? previewLabel(message.content) : "Tin nhắn gốc"}
@@ -48,7 +48,7 @@ export function ReplyComposerBar({
         type="button"
         onClick={onCancel}
         aria-label="Huỷ trả lời"
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/5 text-[var(--muted)]"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[var(--muted)]"
       >
         <XIcon className="h-3.5 w-3.5" />
       </button>

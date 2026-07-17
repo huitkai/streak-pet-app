@@ -130,7 +130,7 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="glass-strong safe-top relative z-20 flex shrink-0 items-center gap-2 px-2.5 pb-2.5">
+      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-2 border-x-0 border-t-0 px-2.5 py-2.5">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"
@@ -147,7 +147,7 @@ export default function ChatHeader({
           <span className="relative shrink-0">
             <Avatar url={partner?.avatar_url} name={nickname || petName} size={40} ring />
             {isPartnerOnline && (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface-solid)] bg-emerald-400" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}
           </span>
           <div className="flex min-w-0 flex-col items-start text-left">
@@ -175,7 +175,7 @@ export default function ChatHeader({
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="Tuỳ chỉnh đoạn chat"
-          className="glass-pill flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
           <MoreIcon className="h-5 w-5" />
         </button>

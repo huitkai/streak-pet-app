@@ -82,8 +82,8 @@ export default function MessageActionDock({
   return (
     <>
       <button type="button" aria-label="Đóng" onClick={onClose} className="fixed inset-0 z-30 cursor-default bg-black/10" />
-      <div className="animate-dock-up fixed inset-x-0 bottom-0 z-40 rounded-t-[28px] bg-[var(--surface)] pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
-        <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-black/10" />
+      <div className="animate-dock-up glass-surface fixed inset-x-0 bottom-0 z-40 rounded-t-[28px] border-x-0 border-b-0 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5">
+        <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-white/15" />
         <div className="thin-scroll flex gap-1.5 overflow-x-auto px-3 pb-1">
           {actions.map((a) => (
             <button
@@ -94,12 +94,12 @@ export default function MessageActionDock({
                 onClose();
               }}
               className={`flex min-w-[68px] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-3 py-2.5 active:scale-95 ${
-                a.danger ? "text-red-500" : "text-[var(--foreground)]"
+                a.danger ? "text-red-400" : "text-[var(--foreground)]"
               }`}
             >
               <span
                 className={`flex h-11 w-11 items-center justify-center rounded-full ${
-                  a.danger ? "bg-red-50" : "bg-[var(--brand-light)] text-[var(--brand-dark)]"
+                  a.danger ? "bg-red-500/15" : "bg-[var(--brand-light)] text-[var(--brand-dark)]"
                 }`}
               >
                 {a.icon}

@@ -69,7 +69,7 @@ export default function VoiceMessageBubble({
   return (
     <div
       className={`animate-bubble-in flex min-w-[190px] items-center gap-2 rounded-2xl px-3 py-2.5 shadow-sm ${
-        mine ? "rounded-br-md bg-[var(--brand)] text-white" : "rounded-bl-md bg-[#f4eef0] text-[var(--foreground)]"
+        mine ? "rounded-br-md bg-[var(--brand)] text-white" : "glass-surface rounded-bl-md text-[var(--foreground)]"
       }`}
     >
       <audio ref={audioRef} src={url} preload="metadata" className="hidden" />
@@ -89,7 +89,7 @@ export default function VoiceMessageBubble({
           <span
             key={i}
             className={`w-[2.5px] shrink-0 rounded-full ${
-              i < activeBars ? (mine ? "bg-white" : "bg-[var(--brand)]") : mine ? "bg-white/40" : "bg-black/15"
+              i < activeBars ? (mine ? "bg-white" : "bg-[var(--brand)]") : mine ? "bg-white/40" : "bg-white/15"
             }`}
             style={{ height: `${h * 18}px` }}
           />
