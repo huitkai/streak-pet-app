@@ -25,6 +25,8 @@ export default function ChatHeader({
   initialNickname,
   initialNicknameRaw,
   partnerProfile,
+  coupleCreatedAt,
+  initialPhotoCount,
 }: {
   coupleId: string;
   userId: string;
@@ -39,6 +41,10 @@ export default function ChatHeader({
   initialNicknameRaw: string;
   myProfile: ProfileRow | null;
   partnerProfile: ProfileRow | null;
+  /** Ngày tạo cặp đôi — dùng tính "số ngày bên nhau" ở màn cài đặt chat. */
+  coupleCreatedAt: string;
+  /** Tổng số ảnh đã gửi trong đoạn chat — hiện ở thống kê màn cài đặt chat. */
+  initialPhotoCount: number;
 }) {
   const [pet, setPet] = useState(initialPet);
   const [streak, setStreak] = useState(initialStreak);
@@ -216,6 +222,13 @@ export default function ChatHeader({
           currentThemeColor={themeColor}
           currentNickname={nicknameRaw}
           partnerRealName={partner?.display_name || "Người ấy"}
+          partnerAvatarUrl={partner?.avatar_url}
+          nickname={nickname}
+          statusLabel={isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : ""}
+          isPartnerOnline={isPartnerOnline}
+          streakCurrent={streak.current_streak}
+          photoCount={initialPhotoCount}
+          coupleCreatedAt={coupleCreatedAt}
           onClose={() => setSettingsOpen(false)}
           onThemeChange={setThemeColor}
           onNicknameChange={(name) => {

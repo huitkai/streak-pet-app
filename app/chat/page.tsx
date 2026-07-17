@@ -46,10 +46,16 @@ export default async function ChatPage() {
   // cache lại (xem lib/chat-cache.ts) — nhờ vậy lần vào lại kế tiếp trong
   // cùng phiên sẽ HIỆN NGAY dữ liệu cũ trong lúc âm thầm đồng bộ bản mới
   // nhất phía sau, thay vì phải "tải lại từ đầu" mỗi lần.
-  const [{ data: streak }, { data: pet }, { data: profiles }] = await Promise.all([
+  const [{ data: streak }, { data: pet }, { data: profiles }, { count: photoCount }] = await Promise.all([
     supabase.from("streaks").select("*").eq("couple_id", couple.id).single(),
     supabase.from("pets").select("*").eq("couple_id", couple.id).single(),
     supabase.from("profiles").select("*").in("id", [user.id, partnerId].filter(Boolean) as string[]),
+    supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("couple_id", couple.id)
+      .is("deleted_at", null)
+      .or("content.like.::image::%,content.like.::stampphoto::%"),
   ]);
 
   if (!streak || !pet) redirect("/couple");
@@ -81,6 +87,8 @@ export default async function ChatPage() {
           initialNicknameRaw={myNicknameRaw}
           myProfile={myProfile}
           partnerProfile={partnerProfile}
+          coupleCreatedAt={couple.created_at}
+          initialPhotoCount={photoCount ?? 0}
         />
         <ChatBox
           coupleId={couple.id}
