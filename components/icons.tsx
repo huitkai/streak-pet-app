@@ -487,6 +487,17 @@ export function ReelIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps
 /** Kính lúp tìm kiếm cho danh sách hội thoại (kích thước nhỏ hơn SearchIcon 1 chút
  * về mặt dùng, nhưng hiện tại tái sử dụng cùng path cho nhất quán — giữ tên riêng
  * để chỗ gọi rõ ngữ nghĩa). */
+export function SlidersIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h13M21 18h-1" />
+      <circle cx="13" cy="6" r="2" fill="var(--surface, #241b16)" />
+      <circle cx="7" cy="12" r="2" fill="var(--surface, #241b16)" />
+      <circle cx="17" cy="18" r="2" fill="var(--surface, #241b16)" />
+    </svg>
+  );
+}
+
 export function SettingsIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
