@@ -12,7 +12,6 @@ import {
   sendImage,
   sendStampPhoto,
   sendGif,
-  sendVoice,
   editMessage,
   recallMessage,
   hideMessageForMe,
@@ -36,7 +35,6 @@ import EmojiFullPicker from "@/components/EmojiFullPicker";
 import MessageActionDock from "@/components/MessageActionDock";
 import { ReplyQuoteInline, ReplyComposerBar } from "@/components/ReplyQuote";
 import PinnedBar from "@/components/PinnedBar";
-import VoiceRecorder from "@/components/VoiceRecorder";
 import InstantCapture from "@/components/InstantCapture";
 import VoiceMessageBubble from "@/components/VoiceMessageBubble";
 import ForwardSheet from "@/components/ForwardSheet";
@@ -47,7 +45,6 @@ import {
   CameraIcon,
   XIcon,
   PlusIcon,
-  MicIcon,
   EditIcon,
   UndoIcon,
   CheckSingleIcon,
@@ -261,7 +258,6 @@ export default function ChatBox({
   const [fadingIds, setFadingIds] = useState<Set<string>>(() => new Set());
   const [replyingTo, setReplyingTo] = useState<MessageRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
   const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -930,48 +926,6 @@ export default function ChatBox({
       // người dùng thử gửi lại hoặc xoá tin.
       setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, pending: false, failed: true } : m)));
       setUploadError(friendlyImageUploadError(err));
-    }
-  }
-
-  /** Ghi âm xong -> upload lên bucket chat-voice -> gửi tin nhắn thoại. */
-  async function handleVoiceSend(blob: Blob, durationSec: number) {
-    setRecording(false);
-    shouldAutoScroll.current = true;
-    const replyToId = replyingTo?.id ?? null;
-    setReplyingTo(null);
-    const localUrl = URL.createObjectURL(blob);
-
-    const optimistic: MessageRow = {
-      id: tempId(),
-      couple_id: coupleId,
-      sender_id: userId,
-      content: `::voice::${localUrl}::${durationSec}`,
-      reply_to_id: replyToId,
-      created_at: new Date().toISOString(),
-      pending: true,
-    };
-    setMessages((prev) => [...prev, optimistic]);
-
-    try {
-      const supabase = createClient();
-      const ext = blob.type.includes("mp4") ? "m4a" : "webm";
-      const path = `${coupleId}/${userId}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("chat-voice")
-        .upload(path, blob, { upsert: false, contentType: blob.type || "audio/webm" });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("chat-voice").getPublicUrl(path);
-
-      const res = await sendVoice(coupleId, pub.publicUrl, durationSec, replyToId);
-      setMessages((prev) => {
-        if (res?.message) {
-          return prev.map((m) => (m.id === optimistic.id ? { ...res.message, pending: false } : m));
-        }
-        return prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m));
-      });
-    } catch (err) {
-      console.error("gửi voice thất bại", err);
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m)));
     }
   }
 
@@ -1691,8 +1645,8 @@ export default function ChatBox({
             <>
               <button type="button" aria-label="Đóng" onClick={() => setAttachOpen(false)} className="fixed inset-0 z-0 cursor-default" />
               <div
-                className="animate-pop-in glass-surface absolute bottom-full left-0 z-10 mb-2 flex gap-2 rounded-2xl p-2 shadow-lg"
-                style={{ transformOrigin: "bottom left" }}
+                className="animate-pop-in glass-surface absolute bottom-full right-0 z-10 mb-2 flex gap-2 rounded-2xl p-2 shadow-lg"
+                style={{ transformOrigin: "bottom right" }}
               >
                 <button
                   type="button"
@@ -1737,11 +1691,43 @@ export default function ChatBox({
             </>
           )}
 
-          {recording ? (
-            <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setRecording(false)} />
-          ) : (
-            <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-1.5">
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+          <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-1.5">
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            <div className="glass-pill flex min-w-0 flex-1 items-center rounded-full pl-3.5 pr-1.5">
+              <input
+                value={text}
+                onChange={(e) => handleTextChange(e.target.value)}
+                onFocus={() => setAttachOpen(false)}
+                placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
+                className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+              />
+              {!editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttachOpen(false);
+                    setInstantCaptureOpen(true);
+                  }}
+                  aria-label="Chụp nhanh"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition active:scale-90"
+                >
+                  <CameraIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Bỏ nút mic — chỉ còn 1 nút tròn duy nhất bên phải pill, giống
+                bố cục ảnh tham khảo: là nút đính kèm "+" khi ô trống, tự
+                chuyển thành nút gửi khi đang gõ chữ. */}
+            {text.trim() ? (
+              <button
+                type="submit"
+                aria-label="Gửi"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_-4px_rgba(217,118,44,0.7)] transition active:scale-95"
+              >
+                <SendIcon className="h-4 w-4" />
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => {
@@ -1755,48 +1741,8 @@ export default function ChatBox({
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
-              <div className="glass-pill flex min-w-0 flex-1 items-center rounded-full pl-3.5 pr-1.5">
-                <input
-                  value={text}
-                  onChange={(e) => handleTextChange(e.target.value)}
-                  onFocus={() => setAttachOpen(false)}
-                  placeholder={editingId ? "Sửa tin nhắn..." : "Nhắn gì đó..."}
-                  className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
-                />
-                {!editingId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAttachOpen(false);
-                      setInstantCaptureOpen(true);
-                    }}
-                    aria-label="Chụp nhanh"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition active:scale-90"
-                  >
-                    <CameraIcon className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              {text.trim() ? (
-                <button
-                  type="submit"
-                  aria-label="Gửi"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_-4px_rgba(217,118,44,0.7)] transition active:scale-95"
-                >
-                  <SendIcon className="h-4 w-4" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setRecording(true)}
-                  aria-label="Ghi âm tin nhắn thoại"
-                  className="glass-icon-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--brand)] transition active:scale-95"
-                >
-                  <MicIcon className="h-4.5 w-4.5" />
-                </button>
-              )}
-            </form>
-          )}
+            )}
+          </form>
         </div>
       </div>
     </div>
