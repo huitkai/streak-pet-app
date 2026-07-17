@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import ConversationRow from "@/components/ConversationRow";
 import InstantSessionFlow from "@/components/InstantSessionFlow";
-import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
+import { CameraIcon, SearchIcon, UserPlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
 import type { ConversationSummary, ProfileRow } from "@/lib/types";
 
 export default function ConversationListClient({
@@ -17,7 +17,6 @@ export default function ConversationListClient({
   /** Nếu couple của mình chưa có đủ 2 người, truyền mã mời để hiện banner chờ. */
   waitingInviteCode: string | null;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [instantOpen, setInstantOpen] = useState(false);
@@ -41,73 +40,41 @@ export default function ConversationListClient({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="glass-surface-strong flex items-center justify-between gap-2 border-b px-4 py-3 shadow-glass safe-top">
-        {searchOpen ? (
-          <div className="flex flex-1 items-center gap-2 rounded-full bg-black/[0.04] px-3 py-2">
-            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm hội thoại..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setSearchOpen(false);
-                setQuery("");
-              }}
-              aria-label="Đóng tìm kiếm"
-              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90 active:bg-black/10"
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <span className="gradient-text text-[22px] font-extrabold tracking-tight md:hidden">
-              Streak&nbsp;Pet
-            </span>
-            <h1 className="gradient-text hidden text-xl font-extrabold md:block">Tin nhắn</h1>
-            <div className="flex items-center gap-1">
-              {conversations.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  aria-label="Tìm hội thoại"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-black/10 md:hidden"
-                >
-                  <SearchIcon className="h-[18px] w-[18px]" />
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setComingSoonOpen(true)}
-                aria-label="Tạo hội thoại mới"
-                className="gradient-brand flex h-9 w-9 items-center justify-center rounded-full text-white shadow-float transition active:scale-90"
-              >
-                <PlusIcon className="h-[18px] w-[18px]" strokeWidth={2.4} />
-              </button>
-            </div>
-          </>
-        )}
+      <header className="glass-surface-strong flex shrink-0 items-center justify-between gap-2 border-b px-4 pb-2 pt-3 shadow-glass safe-top">
+        <span className="gradient-text text-[22px] font-extrabold tracking-tight">Streak&nbsp;Pet</span>
+        <button
+          type="button"
+          onClick={() => setComingSoonOpen(true)}
+          aria-label="Thêm bạn bè"
+          className="gradient-brand flex h-9 w-9 items-center justify-center rounded-full text-white shadow-float transition active:scale-90"
+        >
+          <UserPlusIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+        </button>
       </header>
 
-      {conversations.length > 0 && (
-        <div className="glass-surface hidden border-b px-4 py-2 md:block">
-          <div className="flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-2">
-            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm hội thoại..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
-            />
-          </div>
+      {/* Thanh tìm kiếm tách riêng thành 1 hàng cố định ngay dưới header,
+          giống Messenger — không còn ẩn/hiện dạng overlay như trước. */}
+      <div className="glass-surface shrink-0 border-b px-4 py-2.5">
+        <div className="flex items-center gap-2 rounded-full bg-black/[0.045] px-3.5 py-2.5">
+          <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm hội thoại..."
+            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Xoá tìm kiếm"
+              className="shrink-0 rounded-full p-0.5 text-[var(--muted)] transition active:scale-90"
+            >
+              <XIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="flex-1 overflow-y-auto">
         {waitingInviteCode ? (
@@ -134,17 +101,21 @@ export default function ConversationListClient({
             bạn bè, anh chị em... — chỉ cần đổ thêm vào mảng `conversations`. */}
       </div>
 
-      {/* Nút "+" nổi kiểu Messenger — bấm vào MỞ THẲNG CAMERA, không qua menu
-          trung gian nào. Đặt trên MobileTabBar (chỉ hiện <768px) nên chỉ
-          hiện ở mobile, giống đúng vị trí trong ảnh tham khảo. */}
+      {/* Nút chụp nhanh — thiết kế kiểu "ống kính" nhiều lớp để rõ ràng là
+          MỞ CAMERA (không phải "tạo mới" chung chung như trước), có quầng
+          sáng nhấp nháy nhẹ để dễ nhận ra là điểm chạm chính của màn hình. */}
       {activeCoupleId && (
         <button
           type="button"
           onClick={() => setInstantOpen(true)}
           aria-label="Chụp ảnh tức thì"
-          className="gradient-brand safe-bottom fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-float transition active:scale-90 md:hidden"
+          className="safe-bottom fixed bottom-24 right-5 z-30 flex h-16 w-16 items-center justify-center transition active:scale-90 md:hidden"
         >
-          <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
+          <span className="gradient-brand-soft absolute inset-[-6px] animate-pulse-ring rounded-full" aria-hidden />
+          <span className="glass-surface-strong absolute inset-0 rounded-full border shadow-float" aria-hidden />
+          <span className="gradient-brand relative flex h-[52px] w-[52px] items-center justify-center rounded-full text-white">
+            <CameraIcon className="h-6 w-6" strokeWidth={1.9} />
+          </span>
         </button>
       )}
 
@@ -153,12 +124,12 @@ export default function ConversationListClient({
           <div className="absolute inset-0 bg-black/35" onClick={() => setComingSoonOpen(false)} aria-hidden />
           <div className="glass-surface-strong safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl border p-6 text-center shadow-xl">
             <div className="gradient-brand mx-auto flex h-12 w-12 items-center justify-center rounded-full text-white shadow-float">
-              <ChatBubbleIcon className="h-6 w-6" />
+              <UserPlusIcon className="h-6 w-6" />
             </div>
             <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Sắp ra mắt</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Trò chuyện với bạn bè và người thân đang được phát triển — hiện app chỉ hỗ trợ 1 cuộc trò
-              chuyện với người ấy của bạn.
+              Thêm bạn bè và người thân vào trò chuyện đang được phát triển — hiện app chỉ hỗ trợ 1 cuộc
+              trò chuyện với người ấy của bạn.
             </p>
             <button
               type="button"

@@ -69,6 +69,18 @@ export function UsersIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProp
   );
 }
 
+/** Người + dấu cộng — dùng riêng cho hành động "thêm bạn / mời người ấy",
+ * tách biệt rõ với PlusIcon (dùng cho "tạo mới"/"đính kèm" chung chung). */
+export function UserPlusIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
+      <circle cx="9.5" cy="8" r="3.2" />
+      <path d="M2.8 20c.6-3.6 3.1-5.5 6.7-5.5s5.9 1.7 6.5 4.9" />
+      <path d="M18.5 8v6M15.5 11h6" />
+    </svg>
+  );
+}
+
 export function MailIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>

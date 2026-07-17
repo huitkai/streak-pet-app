@@ -28,7 +28,7 @@ export default async function Home({
 
   const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
 
-  const [{ data: myProfile }, { data: partnerProfile }, { data: streak }, { data: lastMsg }, { data: myRead }] =
+  const [{ data: myProfile }, { data: partnerProfile }, { data: streak }, { data: lastMsg }, { data: myRead }, { data: lastInstant }] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       partnerId
@@ -48,6 +48,22 @@ export default async function Home({
         .eq("couple_id", couple.id)
         .eq("user_id", user.id)
         .maybeSingle(),
+      // Ảnh "Chụp nhanh" (::stampphoto::) gần nhất do ĐỐI PHƯƠNG gửi trong
+      // 24h qua — dùng để xác định viền avatar kiểu "story" (xem hasInstant/
+      // hasUnseenInstant bên dưới). Quá 24h coi như story đã hết hạn, viền
+      // biến mất giống Instagram.
+      partnerId
+        ? supabase
+            .from("messages")
+            .select("created_at")
+            .eq("couple_id", couple.id)
+            .eq("sender_id", partnerId)
+            .ilike("content", "::stampphoto::%")
+            .gt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
   // Cấu trúc dữ liệu tổng quát hoá sẵn (xem ConversationSummary trong
@@ -82,6 +98,10 @@ export default async function Home({
         themeColor: couple.theme_color ?? DEFAULT_THEME_COLOR,
         isPinned: (couple.user1_id === user.id ? couple.pinned_by_user1 : couple.pinned_by_user2) ?? false,
         isMuted: (couple.user1_id === user.id ? couple.muted_by_user1 : couple.muted_by_user2) ?? false,
+        hasInstant: Boolean(lastInstant?.created_at),
+        hasUnseenInstant: Boolean(
+          lastInstant?.created_at && lastInstant.created_at > (myRead?.last_read_at ?? "1970-01-01T00:00:00Z")
+        ),
       },
     ];
   }

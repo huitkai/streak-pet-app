@@ -162,4 +162,12 @@ export interface ConversationSummary {
   themeColor: string;
   isPinned: boolean;
   isMuted: boolean;
+  /** true nếu đối phương TỪNG gửi ảnh "Chụp nhanh" gần đây (bất kể đã xem
+   * hay chưa) — quyết định có hiện viền quanh avatar hay không (giống việc
+   * có "story" hay không trên Instagram). */
+  hasInstant: boolean;
+  /** true nếu đối phương có gửi ảnh "Chụp nhanh" (stamp_photo) sau lần cuối
+   * mình đọc đoạn chat này — dùng để hiện viền tím kiểu "story chưa xem"
+   * quanh avatar; đọc rồi (mở /chat) thì viền tự chuyển sang xám/trắng. */
+  hasUnseenInstant: boolean;
 }

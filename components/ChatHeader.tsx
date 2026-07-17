@@ -144,7 +144,7 @@ export default function ChatHeader({
           href={partnerId ? `/profile/${partnerId}` : "#"}
           className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
         >
-          <span className="relative shrink-0 rounded-full p-[2px] gradient-brand">
+          <span className="relative shrink-0 rounded-full p-[2px] bg-black/10">
             <Avatar url={partner?.avatar_url} name={nickname || petName} size={38} />
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-emerald-400" />

@@ -111,7 +111,15 @@ export default function ConversationRow({
           }}
           className="flex items-center gap-3 px-4 py-3 transition active:bg-black/[0.04]"
         >
-          <span className="relative shrink-0 rounded-full p-[2px] gradient-brand">
+          <span
+            className={`relative shrink-0 rounded-full p-[2px] ${
+              conversation.hasUnseenInstant
+                ? "gradient-brand"
+                : conversation.hasInstant
+                  ? "bg-black/15"
+                  : ""
+            }`}
+          >
             <Avatar
               url={conversation.partnerProfile?.avatar_url}
               name={conversation.nickname || conversation.petName}
