@@ -10,7 +10,7 @@ import PetSheet from "@/components/PetSheet";
 import ChatSettingsSheet from "@/components/ChatSettingsSheet";
 import PetEvolutionCelebration from "@/components/PetEvolutionCelebration";
 import Avatar from "@/components/Avatar";
-import { ArrowLeftIcon, MoreIcon, PhoneIcon, VideoIcon } from "@/components/icons";
+import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, VideoIcon } from "@/components/icons";
 import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
 import { useChatTheme } from "@/lib/chat-theme-context";
 
@@ -136,13 +136,13 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-2 border-x-0 border-t-0 px-2.5 py-2.5">
+      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-0.5 border-x-0 border-t-0 px-1 py-2.5">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-white/10"
+          className="flex h-10 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-white/10"
         >
-          <ArrowLeftIcon className="h-5 w-5" />
+          <ChevronLeftIcon className="h-6 w-6" />
         </Link>
 
         {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ, giống TikTok */}
@@ -154,6 +154,24 @@ export default function ChatHeader({
             <Avatar url={partner?.avatar_url} name={nickname || petName} size={40} ring />
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
+            )}
+            {/* Streak dời khỏi thanh nút header (đỡ chồng lấn nút gọi/settings) ->
+                gắn thành huy hiệu nhỏ ở góc avatar, kiểu "streak badge" quen thuộc
+                (Snapchat/Zalo). Bấm vào avatar/tên vẫn mở trang hồ sơ như cũ; muốn
+                xem chi tiết chuỗi + pet thì bấm thẳng vào huy hiệu lửa này. */}
+            {streak.current_streak > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSheetOpen(true);
+                }}
+                aria-label="Xem chuỗi và pet"
+                className="absolute -bottom-1 -left-1.5 transition active:scale-90"
+              >
+                <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
+              </button>
             )}
           </span>
           <div className="flex min-w-0 flex-col items-start text-left">
@@ -168,12 +186,15 @@ export default function ChatHeader({
           </div>
         </Link>
 
+        {/* Gọi thoại/video: giữ nguyên chỗ này, backend nối sau. Thu nhỏ vùng
+            chạm (36px thay vì 40px) và bỏ bớt khoảng cách giữa các nút để đủ
+            chỗ cho tên dài không bị đè, thay vì bỏ hẳn 2 nút này. */}
         <button
           type="button"
           aria-label="Gọi thoại"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
-          <PhoneIcon className="h-[19px] w-[19px]" strokeWidth={1.8} />
+          <PhoneIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
         </button>
 
         <button
@@ -181,25 +202,18 @@ export default function ChatHeader({
           aria-label="Gọi video"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
-          <VideoIcon className="h-[19px] w-[19px]" strokeWidth={1.8} />
+          <VideoIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
         </button>
 
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          aria-label="Xem chuỗi và pet"
-          className="flex shrink-0 items-center gap-1 transition active:scale-95"
-        >
-          <FlameBadge streak={streak.current_streak} size="xl" variant="pill" />
-        </button>
-
+        {/* Icon "..." nằm ngang cũ tốn bề ngang hơn -> đổi thành 3 chấm nằm
+            dọc (MoreVerticalIcon), gọn hơn để không góp phần gây chồng nút. */}
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="Tuỳ chỉnh đoạn chat"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
-          <MoreIcon className="h-5 w-5" />
+          <MoreVerticalIcon className="h-5 w-5" />
         </button>
       </header>
 

@@ -102,6 +102,23 @@ export function ArrowLeftIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: Icon
   );
 }
 
+/** Chevron đơn giản kiểu iOS/Messenger (không có nét ngang) — đúng kiểu nút
+ * "quay lại" trong ảnh tham khảo, thay cho ArrowLeftIcon (mũi tên đầy đủ)
+ * vốn nhìn nặng và không khớp phong cách app tham khảo. */
+export function ChevronLeftIcon({ className = "w-5 h-5", strokeWidth = 2.2 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M15 5.5 8 12l7 6.5"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ArrowRightIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
@@ -406,6 +423,18 @@ export function MoreIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps
       <circle cx="5" cy="12" r="1.6" />
       <circle cx="12" cy="12" r="1.6" />
       <circle cx="19" cy="12" r="1.6" />
+    </svg>
+  );
+}
+
+/** Giống MoreIcon nhưng xoay dọc (3 chấm nằm dọc) — dùng cho nút "tuỳ chỉnh
+ * đoạn chat" ở header để tiết kiệm bề ngang, thay vì bản nằm ngang tốn chỗ. */
+export function MoreVerticalIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" strokeWidth={strokeWidth}>
+      <circle cx="12" cy="5" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="12" cy="19" r="1.6" />
     </svg>
   );
 }
