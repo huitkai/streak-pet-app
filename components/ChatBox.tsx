@@ -1726,7 +1726,7 @@ export default function ChatBox({
                   }}
                   className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/5"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
+                  <span className="glass-icon-btn flex h-10 w-10 items-center justify-center rounded-full text-[var(--brand)]">
                     <ImageIcon className="h-5 w-5" />
                   </span>
                   Ảnh
@@ -1739,7 +1739,7 @@ export default function ChatBox({
                   }}
                   className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/5"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
+                  <span className="glass-icon-btn flex h-10 w-10 items-center justify-center rounded-full text-[var(--brand)]">
                     <CameraIcon className="h-5 w-5" />
                   </span>
                   Chụp nhanh
@@ -1752,7 +1752,7 @@ export default function ChatBox({
                   }}
                   className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--foreground)] active:bg-white/5"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)]">
+                  <span className="glass-icon-btn flex h-10 w-10 items-center justify-center rounded-full text-[var(--brand)]">
                     <SmileStickerIcon className="h-5 w-5" />
                   </span>
                   Nhãn dán
@@ -1774,7 +1774,7 @@ export default function ChatBox({
                 }}
                 aria-label="Đính kèm"
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                  attachOpen ? "rotate-45 bg-[var(--brand)] text-white" : "bg-[var(--brand-light)] text-[var(--brand-dark)]"
+                  attachOpen ? "rotate-45 bg-[var(--brand)] text-white" : "glass-icon-btn text-[var(--brand)]"
                 }`}
               >
                 <PlusIcon className="h-5 w-5" />
@@ -1805,7 +1805,7 @@ export default function ChatBox({
                 <button
                   type="submit"
                   aria-label="Gửi"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white transition active:scale-95"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_-4px_rgba(217,118,44,0.7)] transition active:scale-95"
                 >
                   <SendIcon className="h-4 w-4" />
                 </button>
@@ -1814,7 +1814,7 @@ export default function ChatBox({
                   type="button"
                   onClick={() => setRecording(true)}
                   aria-label="Ghi âm tin nhắn thoại"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand-dark)] transition active:scale-95"
+                  className="glass-icon-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--brand)] transition active:scale-95"
                 >
                   <MicIcon className="h-4.5 w-4.5" />
                 </button>
