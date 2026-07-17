@@ -112,8 +112,14 @@ export function HeroBadge({
  * khảo, và trải dài hết vùng tên/tag/thống kê chứ không dừng lại ở mép ảnh. */
 export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
-      {imageUrl && (
+    // z-0 (không phải -z-10): container cha chỉ có `relative` chứ không tự
+    // tạo stacking context mới, nên z-index ÂM từng khiến lớp nền này bị
+    // "chìm" xuống dưới cả nền trắng hồng của toàn bộ trang — kết quả là
+    // chỉ còn chữ trắng mờ trên nền hồng nhạt, trông như bị vỡ giao diện.
+    // Container cha (bên dưới) đã thêm `isolate` để đảm bảo z-0 ở đây luôn
+    // là lớp thấp nhất RIÊNG trong phạm vi hero, không ảnh hưởng ra ngoài.
+    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
+      {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
@@ -124,6 +130,22 @@ export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
             WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
           }}
         />
+      ) : (
+        // Chưa có ảnh: thay vì một khối màu phẳng (nhìn như hình vẽ trẻ
+        // con), phủ thêm vài quầng sáng mờ + noise nhẹ để có chiều sâu,
+        // gần với cảm giác "biên tập/editorial" của ảnh mẫu hơn.
+        <div className="absolute inset-0 h-[62%] w-full overflow-hidden">
+          <div className="absolute -left-10 -top-16 h-64 w-64 rounded-full bg-white/25 blur-3xl" />
+          <div className="absolute -right-16 top-10 h-72 w-72 rounded-full bg-[#ffd7e8]/30 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[#4a5fb0]/30 blur-3xl" />
+          <div
+            className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+            }}
+          />
+        </div>
       )}
       <div className="absolute inset-0 bg-black/10" />
     </div>
@@ -235,7 +257,7 @@ export default function ProfileEditor({
   }
 
   return (
-    <div className="relative flex min-h-[680px] flex-col items-center overflow-hidden pb-8 pt-24">
+    <div className="relative isolate flex min-h-[600px] flex-col items-center overflow-hidden pb-8 pt-24">
       <HeroBackground imageUrl={bannerUrl || avatarUrl} />
 
       {/* Nút đổi ảnh bìa, đặt kín đáo góc phải để không đè lên avatar/tên */}

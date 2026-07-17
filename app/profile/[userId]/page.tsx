@@ -113,8 +113,8 @@ export default async function ProfilePage({
   }
 
   return (
-    <div className="safe-bottom flex flex-1 flex-col bg-[var(--background)]">
-      <div className="flex-1 overflow-y-auto">
+    <div className="safe-bottom flex min-h-0 flex-1 flex-col bg-[var(--background)]">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="relative">
           <header className="safe-top absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-2.5">
             <Link
@@ -129,7 +129,7 @@ export default async function ProfilePage({
           {isSelf ? (
             <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} eyebrow={eyebrow} />
           ) : (
-            <div className="relative flex min-h-[680px] flex-col items-center overflow-hidden pb-8 pt-24">
+            <div className="relative isolate flex min-h-[600px] flex-col items-center overflow-hidden pb-8 pt-24">
               <HeroBackground imageUrl={targetProfile.banner_url || targetProfile.avatar_url} />
 
               <div className="flex flex-1 flex-col items-center justify-end px-5 pt-40">
