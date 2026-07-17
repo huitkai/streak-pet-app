@@ -113,6 +113,12 @@ body {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* Biến thể "nhấc lên" cho thanh nhập tin nhắn nổi (floating composer) — cộng
+   thêm khoảng đệm ngoài safe-area để ô nhập không dính sát mép dưới màn hình,
+   giống ảnh tham khảo (ô nhập lơ lửng, có khoảng hở phía dưới). */
+.safe-bottom-lift {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
+}
 
 @keyframes pet-breathe {
   0%, 100% { transform: scale(var(--pet-scale, 1)) translateY(0); }

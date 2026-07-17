@@ -151,7 +151,7 @@ export default function ChatHeader({
           className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
         >
           <span className="relative shrink-0">
-            <Avatar url={partner?.avatar_url} name={nickname || petName} size={40} ring />
+            <Avatar url={partner?.avatar_url} name={nickname || petName} size={36} ring />
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}
@@ -186,15 +186,15 @@ export default function ChatHeader({
           </div>
         </Link>
 
-        {/* Gọi thoại/video: giữ nguyên chỗ này, backend nối sau. Thu nhỏ vùng
-            chạm (36px thay vì 40px) và bỏ bớt khoảng cách giữa các nút để đủ
-            chỗ cho tên dài không bị đè, thay vì bỏ hẳn 2 nút này. */}
+        {/* Gọi thoại/video: giữ nguyên chỗ này, backend nối sau. Tăng kích
+            thước icon lên (avatar đã thu nhỏ) để hài hoà, cân đối hơn giữa
+            avatar nhỏ và cụm nút bên phải, giống ảnh tham khảo. */}
         <button
           type="button"
           aria-label="Gọi thoại"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
-          <PhoneIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          <PhoneIcon className="h-5 w-5" strokeWidth={1.8} />
         </button>
 
         <button
@@ -202,7 +202,7 @@ export default function ChatHeader({
           aria-label="Gọi video"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
         >
-          <VideoIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          <VideoIcon className="h-5 w-5" strokeWidth={1.8} />
         </button>
 
         {/* Icon "..." nằm ngang cũ tốn bề ngang hơn -> đổi thành 3 chấm nằm

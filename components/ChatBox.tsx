@@ -1609,7 +1609,13 @@ export default function ChatBox({
         <InstantCapture onCapture={handleStampCapture} onClose={() => setInstantCaptureOpen(false)} />
       )}
 
-      <div className="safe-bottom glass-surface relative z-10 border-x-0 border-b-0 px-2.5 py-2">
+      {/* Trước đây cả thanh composer nằm trong 1 khối "glass-surface" full-width
+          (viền + nền kính riêng) trông như 1 thanh footer tách biệt. Bỏ khối
+          nền/viền đó đi — để lộ nền chat phía sau, chỉ còn ô nhập (glass-pill)
+          và nút tròn nổi lên trên nền trong suốt, đúng kiểu "nổi lơ lửng"
+          trong ảnh tham khảo. Đồng thời nhấc cả cụm lên cao hơn 1 chút khỏi
+          mép dưới màn hình (thêm padding-bottom ngoài safe-area). */}
+      <div className="safe-bottom-lift relative z-10 px-3 pt-1.5">
         {pickerOpen && (
           <StickerPicker
             onSelectSticker={handlePickSticker}
