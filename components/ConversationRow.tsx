@@ -169,7 +169,7 @@ export default function ConversationRow({
               <div className="flex shrink-0 items-center gap-1.5">
                 <FlameBadge streak={conversation.currentStreak} size="sm" />
                 {hasUnread && !isMuted && (
-                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-bold text-white">
+                  <span className="unread-dot flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white">
                     {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                   </span>
                 )}

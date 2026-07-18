@@ -7,17 +7,24 @@
  * Xem thêm .glass-surface / .glass-pill bên dưới cho lớp kính dùng chung.
  */
 :root {
-  --background: #16110e;
-  --background-elevated: #1e1712;
+  --background: #0d0b12;
+  --background-elevated: #161320;
   --foreground: #f6efe7;
   --brand: #f0954a;
   --brand-dark: #d9762c;
   --brand-light: rgba(240, 149, 74, 0.16);
-  --surface: #241b16;
+  --surface: #1a1626;
   --surface-glass: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.1);
   --muted: #a89686;
   --danger: #ff4d4d;
+  /* Cặp màu lạnh cố định (không đổi theo theme cuộc trò chuyện) — trộn cùng
+     --brand động để nền luôn có ít nhất 2 tông màu, tránh cảm giác đơn sắc
+     dù người dùng chọn theme màu nào. Lấy cảm hứng từ các ảnh tham chiếu
+     (nền xanh dương-tím sâu, không phải 1 màu nâu phẳng). */
+  --accent-violet: #6d5bd0;
+  --accent-blue: #3f7ed6;
+  --online: #34d399;
 }
 
 @theme inline {
@@ -28,13 +35,17 @@
   --color-brand-light: var(--brand-light);
 }
 
-/* Nền tổng thể: gradient nâu ấm nhiều lớp, tạo chiều sâu giống ảnh tham chiếu
-   thay vì 1 màu phẳng. Cố định (fixed) để không bị "trôi" khi cuộn danh sách. */
+/* Nền tổng thể: DUOTONE — lớp lạnh (tím/xanh) cố định làm đáy chiều sâu +
+   lớp --brand động phủ lên theo theme cuộc trò chuyện đang chọn. Trước đây
+   chỉ có 1 tông nâu-cam nhạt nên nhìn phẳng/đơn sắc; giờ luôn có tối thiểu
+   2-3 vùng màu khác nhau loang vào nhau, giống các ảnh tham chiếu. Cố định
+   (fixed) để không "trôi" khi cuộn danh sách. */
 .app-ambient-bg {
   background:
-    radial-gradient(120% 90% at 15% -10%, rgba(240, 149, 74, 0.16) 0%, transparent 55%),
-    radial-gradient(100% 70% at 100% 0%, rgba(120, 80, 60, 0.22) 0%, transparent 60%),
-    linear-gradient(180deg, #1c150f 0%, #14100c 55%, #100c09 100%);
+    radial-gradient(85% 55% at 12% -8%, color-mix(in srgb, var(--brand) 38%, transparent) 0%, transparent 60%),
+    radial-gradient(90% 60% at 105% 6%, color-mix(in srgb, var(--accent-violet) 40%, transparent) 0%, transparent 62%),
+    radial-gradient(80% 50% at 50% 115%, color-mix(in srgb, var(--accent-blue) 30%, transparent) 0%, transparent 65%),
+    linear-gradient(180deg, #14101c 0%, #0f0c14 55%, #0a080d 100%);
 }
 
 /* Card/thanh kính mờ dùng chung: header, ô tìm kiếm, hàng hội thoại, tab bar,
@@ -107,8 +118,30 @@
   background: rgba(217, 118, 44, 0.28);
 }
 
-* {
-  -webkit-tap-highlight-color: transparent;
+/* Tabs lọc dạng segmented-pill (All / Favorites / Work / Groups...) — tab
+   active nổi hẳn bằng gradient theo --brand thay vì chỉ đổi màu chữ, giống
+   viên "All" tô đặc trong ảnh tham khảo. */
+.segmented-tab {
+  border: 1px solid transparent;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.segmented-tab-active {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--accent-violet) 130%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--brand) 60%, transparent);
+}
+
+/* Chấm "chưa đọc" đỏ-cam nổi khối (không phải đỏ phẳng thường) + check mark
+   xanh dương cho trạng thái "đã xem", tách bạch rõ 2 trạng thái bằng màu. */
+.unread-dot {
+  background: linear-gradient(135deg, #ff6b5b, #ff3d5f);
+  box-shadow: 0 2px 6px -1px rgba(255, 61, 95, 0.6);
+}
+.seen-check {
+  color: var(--accent-blue);
 }
 
 /* Phản hồi chạm tức thì trên toàn app:

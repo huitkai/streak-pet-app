@@ -19,6 +19,7 @@ export default function ConversationListClient({
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"all" | "unread" | "pinned">("all");
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [instantOpen, setInstantOpen] = useState(false);
   // Hiện tại app chỉ hỗ trợ đúng 1 cuộc trò chuyện (couple) — lấy id từ phần
@@ -28,16 +29,18 @@ export default function ConversationListClient({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = !q
+    let base = !q
       ? conversations
       : conversations.filter(
           (c) => c.nickname.toLowerCase().includes(q) || c.previewText.toLowerCase().includes(q)
         );
+    if (tab === "unread") base = base.filter((c) => c.unreadCount > 0);
+    if (tab === "pinned") base = base.filter((c) => c.isPinned);
     // Hội thoại đã ghim luôn nổi lên đầu danh sách (chưa có ý nghĩa nhiều khi
     // chỉ có 1 hội thoại duy nhất, nhưng sẵn sàng cho lúc mở rộng bạn bè/
     // người thân — xem ghi chú trong ConversationSummary).
     return [...base].sort((a, b) => Number(b.isPinned) - Number(a.isPinned));
-  }, [conversations, query]);
+  }, [conversations, query, tab]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden text-[var(--foreground)]">
@@ -92,6 +95,25 @@ export default function ConversationListClient({
         )}
       </header>
 
+      {!searchOpen && conversations.length > 0 && (
+        <div className="thin-scroll flex shrink-0 items-center gap-2 overflow-x-auto px-5 pb-3">
+          {(["all", "unread", "pinned"] as const).map((key) => {
+            const active = tab === key;
+            const label = key === "all" ? "Tất cả" : key === "unread" ? "Chưa đọc" : "Đã ghim";
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`segmented-tab shrink-0 rounded-full px-4 py-1.5 text-[13px] ${active ? "segmented-tab-active" : ""}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {waitingInviteCode ? (
           <div className="glass-surface mx-1 mt-4 rounded-3xl p-5 text-center">
@@ -123,7 +145,8 @@ export default function ConversationListClient({
           type="button"
           onClick={() => setInstantOpen(true)}
           aria-label="Chụp ảnh tức thì"
-          className="safe-bottom fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[0_8px_24px_rgba(240,149,74,0.45)] transition active:scale-90 md:hidden"
+          className="safe-bottom fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_10px_28px_-6px_rgba(240,149,74,0.55)] transition active:scale-90 md:hidden"
+          style={{ background: "linear-gradient(135deg, var(--brand) 0%, var(--accent-violet) 130%)" }}
         >
           <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
         </button>
