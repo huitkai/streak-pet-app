@@ -150,8 +150,12 @@ export default function ChatHeader({
           href={partnerId ? `/profile/${partnerId}` : "#"}
           className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
         >
-          <span className="relative shrink-0">
-            <Avatar url={partner?.avatar_url} name={nickname || petName} size={36} ring />
+          <span
+            className={`relative shrink-0 rounded-full p-[2px] ${isPartnerOnline ? "avatar-ring-online" : "avatar-ring-offline"}`}
+          >
+            <span className="block rounded-full border-2 border-[var(--background)]">
+              <Avatar url={partner?.avatar_url} name={nickname || petName} size={34} />
+            </span>
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}

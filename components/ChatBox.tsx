@@ -1448,9 +1448,9 @@ export default function ChatBox({
                           onPointerUp={cancelLongPress}
                           onPointerLeave={cancelLongPress}
                           onClick={() => handleBubbleClick(m.id)}
-                          className={`animate-bubble-in glass-surface pointer-events-auto select-none rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm ${
-                            mine ? "rounded-br-md" : "rounded-bl-md"
-                          } text-[var(--foreground)] ${m.pending ? "opacity-60" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
+                          className={`animate-bubble-in pointer-events-auto select-none rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                            mine ? "bubble-sent rounded-br-md text-white" : "bubble-received rounded-bl-md text-[var(--foreground)]"
+                          } ${m.pending ? "opacity-60" : ""} ${m.failed ? "ring-2 ring-red-400" : ""}`}
                         >
                           {replyTarget && <ReplyQuoteInline message={replyTarget} mine={mine} onJump={() => jumpToMessage(replyTarget)} />}
                           {decoded.text}

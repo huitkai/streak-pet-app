@@ -38,11 +38,13 @@ export default function DesktopNavRail({
 
   const itemClass = (active: boolean) =>
     `flex items-center gap-3.5 rounded-xl px-3 py-2.5 transition active:scale-[0.97] ${
-      active ? "font-bold text-[var(--foreground)]" : "font-normal text-[var(--foreground)] hover:bg-black/5"
+      active
+        ? "bg-[var(--brand-light)] font-bold text-[var(--foreground)]"
+        : "font-normal text-[var(--foreground)] hover:bg-white/5"
     }`;
 
   return (
-    <nav className="hidden lg:flex lg:w-[72px] xl:w-[244px] lg:shrink-0 lg:flex-col lg:border-r lg:border-[var(--border)] lg:bg-[var(--surface)] lg:px-2 lg:py-5">
+    <nav className="app-ambient-bg relative hidden lg:flex lg:w-[72px] xl:w-[244px] lg:shrink-0 lg:flex-col lg:border-r lg:border-[var(--border)] lg:px-2 lg:py-5">
       <Link href="/" className="mb-6 flex items-center gap-2 px-3 py-2" aria-label="Streak & Pet">
         <PawIcon className="h-7 w-7 shrink-0 text-[var(--brand)]" strokeWidth={1.6} />
         <span className="hidden font-serif text-2xl italic tracking-tight text-[var(--foreground)] xl:inline">
@@ -93,7 +95,7 @@ export default function DesktopNavRail({
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setSoon(false)}>
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div
-            className="relative w-full max-w-xs rounded-2xl bg-[var(--surface)] p-5 text-center shadow-xl"
+            className="widget-card relative w-full max-w-xs rounded-2xl p-5 text-center shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm text-[var(--muted)]">Tính năng này đang được phát triển, quay lại sau nhé 💗</p>

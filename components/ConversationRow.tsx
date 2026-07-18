@@ -111,12 +111,27 @@ export default function ConversationRow({
           }}
           className="flex items-center gap-3 rounded-3xl px-3.5 py-3 transition active:bg-white/5"
         >
-          <span className="relative shrink-0">
-            <Avatar
-              url={conversation.partnerProfile?.avatar_url}
-              name={conversation.nickname || conversation.petName}
-              size={54}
-            />
+          <span
+            className={`relative shrink-0 rounded-full p-[2.5px] ${isOnline ? "avatar-ring-online" : "avatar-ring-offline"}`}
+          >
+            {/* cover-photo-frame: kỹ thuật ảnh nền tự-blur + scrim tối, xem
+                comment chi tiết trong globals.css. Ở avatar tròn, blur layer
+                chủ yếu tạo glow màu bao quanh viền khi avatar không full-bleed. */}
+            <span className="cover-photo-frame block rounded-full border-2 border-[var(--background)]">
+              {conversation.partnerProfile?.avatar_url && (
+                <span
+                  className="cover-photo-blur"
+                  style={{ backgroundImage: `url(${conversation.partnerProfile.avatar_url})` }}
+                />
+              )}
+              <span className="cover-photo-content">
+                <Avatar
+                  url={conversation.partnerProfile?.avatar_url}
+                  name={conversation.nickname || conversation.petName}
+                  size={54}
+                />
+              </span>
+            </span>
             {isOnline && (
               <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}

@@ -222,35 +222,52 @@ export default function ChatSettingsSheet({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8">
-        {/* ---- Avatar + tên + trạng thái, căn giữa giống mẫu ---- */}
-        <div className="flex flex-col items-center pt-1 text-center">
-          <span className="relative">
-            <Avatar url={partnerAvatarUrl} name={nickname || partnerRealName} size={88} ring />
-            {isPartnerOnline && (
-              <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
-            )}
-          </span>
-          <h1 className="mt-3 text-xl font-bold text-[var(--foreground)]">{nickname}</h1>
-          <p className={`mt-0.5 text-[13px] ${isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"}`}>
-            {statusLabel || `Bên nhau từ ${formatJoinDate(coupleCreatedAt)}`}
-          </p>
+      <div className="min-h-0 flex-1 overflow-y-auto pb-8">
+        {/* ---- Hero: ảnh đại diện đối phương tự-blur làm nền phía sau avatar/
+             tên/trạng thái (kỹ thuật cover-photo-frame, xem globals.css) —
+             thay cho nền phẳng app-ambient-bg đơn điệu, giống mẫu tham khảo
+             (mảng màu ấm loang phía sau header cài đặt). ---- */}
+        <div className="cover-photo-frame -mx-0 flex flex-col items-center px-4 pb-5 pt-1 text-center">
+          {partnerAvatarUrl && (
+            <span className="cover-photo-blur" style={{ backgroundImage: `url(${partnerAvatarUrl})` }} />
+          )}
+          <span className="cover-photo-scrim" />
+          <div className="cover-photo-content flex flex-col items-center">
+            <span className="relative">
+              <Avatar url={partnerAvatarUrl} name={nickname || partnerRealName} size={88} ring />
+              {isPartnerOnline && (
+                <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
+              )}
+            </span>
+            <h1 className="mt-3 text-xl font-bold text-[var(--foreground)]">{nickname}</h1>
+            <p className={`mt-0.5 text-[13px] ${isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"}`}>
+              {statusLabel || `Bên nhau từ ${formatJoinDate(coupleCreatedAt)}`}
+            </p>
+          </div>
         </div>
+
+        <div className="px-4">
 
         {/* ---- Hàng thống kê (thay cho Message/Group/Spaces trong mẫu) ---- */}
         <div className="mt-5 grid grid-cols-3 gap-2.5">
-          <div className="glass-surface flex flex-col items-center gap-1 rounded-2xl py-3">
-            <FlameIcon className="h-4 w-4 text-[var(--brand)]" />
+          <div className="widget-card flex flex-col items-center gap-1.5 rounded-2xl py-3.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-light)]">
+              <FlameIcon className="h-4 w-4 text-[var(--brand)]" />
+            </span>
             <span className="text-lg font-bold text-[var(--foreground)]">{streakCurrent}</span>
             <span className="text-[10.5px] text-[var(--muted)]">Chuỗi ngày</span>
           </div>
-          <div className="glass-surface flex flex-col items-center gap-1 rounded-2xl py-3">
-            <ImageIcon className="h-4 w-4 text-[var(--brand)]" />
+          <div className="widget-card flex flex-col items-center gap-1.5 rounded-2xl py-3.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-light)]">
+              <ImageIcon className="h-4 w-4 text-[var(--brand)]" />
+            </span>
             <span className="text-lg font-bold text-[var(--foreground)]">{photoCount}</span>
             <span className="text-[10.5px] text-[var(--muted)]">Ảnh đã gửi</span>
           </div>
-          <div className="glass-surface flex flex-col items-center gap-1 rounded-2xl py-3">
-            <TrophyIcon className="h-4 w-4 text-[var(--brand)]" />
+          <div className="widget-card flex flex-col items-center gap-1.5 rounded-2xl py-3.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-light)]">
+              <TrophyIcon className="h-4 w-4 text-[var(--brand)]" />
+            </span>
             <span className="text-lg font-bold text-[var(--foreground)]">
               {Math.max(1, Math.floor((Date.now() - new Date(coupleCreatedAt).getTime()) / 86_400_000) + 1)}
             </span>
@@ -265,7 +282,7 @@ export default function ChatSettingsSheet({
               <h2 className="text-[15px] font-semibold text-[var(--foreground)]">Ảnh và khoảnh khắc</h2>
               <ChevronRightIcon className="h-4 w-4 text-[var(--muted)]" />
             </div>
-            <div className="glass-surface mt-2 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1">
+            <div className="widget-card mt-2 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1">
               {recentPhotos === null
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="aspect-square animate-shimmer rounded-xl" />
@@ -289,7 +306,7 @@ export default function ChatSettingsSheet({
         )}
 
         {/* ---- Danh sách tuỳ chọn, giống mẫu ---- */}
-        <section className="glass-surface mt-5 divide-y divide-[var(--border)] overflow-hidden rounded-2xl">
+        <section className="widget-card mt-5 divide-y divide-[var(--border)] overflow-hidden rounded-2xl">
           <SettingsRow icon={<BellIcon className="h-[18px] w-[18px]" />} label="Thông báo" />
           <SettingsRow icon={<ImageIcon className="h-[18px] w-[18px]" />} label="Hiển thị media" />
           <SettingsRow icon={<PinIcon className="h-[18px] w-[18px]" />} label="Tin nhắn đã ghim" />
@@ -314,7 +331,7 @@ export default function ChatSettingsSheet({
         {/* ---- Tuỳ chỉnh nâng cao (màu chủ đề + biệt danh) — bấm dòng "Chủ
              đề & biệt danh" ở trên để mở, giữ nguyên tính năng cũ. ---- */}
         {customizeOpen && (
-          <section className="glass-surface mt-5 rounded-2xl p-4">
+          <section className="widget-card mt-5 rounded-2xl p-4">
             <p className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold text-[var(--muted)]">
               <PaletteIcon className="h-3.5 w-3.5" /> Màu chủ đề
             </p>
@@ -405,6 +422,7 @@ export default function ChatSettingsSheet({
             )}
           </section>
         )}
+        </div>
       </div>
     </div>
   );
@@ -434,7 +452,9 @@ function SettingsRow({
 }) {
   const content = (
     <>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[var(--brand)]">{icon}</span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand)]">
+        {icon}
+      </span>
       <span className="flex-1 text-left text-[14.5px] font-medium text-[var(--foreground)]">{label}</span>
       {toggle ? (
         <span

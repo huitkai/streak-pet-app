@@ -37,7 +37,9 @@ export default function MobileTabBar({
       <nav className="safe-bottom shrink-0 px-4 pb-3 pt-1 md:hidden">
         <div className="glass-pill mx-auto flex max-w-sm items-center rounded-full px-2 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
           <Link href="/" aria-label="Chats" className={tabClass(isHome)}>
-            <HomeIcon className="h-[22px] w-[22px]" filled={isHome} strokeWidth={2} />
+            <span className={`flex h-8 w-8 items-center justify-center rounded-full ${isHome ? "bg-[var(--brand-light)]" : ""}`}>
+              <HomeIcon className="h-[20px] w-[20px]" filled={isHome} strokeWidth={2} />
+            </span>
             <span className="text-[10px] font-medium">Chats</span>
           </Link>
           <button type="button" onClick={() => setSoon(true)} aria-label="Call" className={tabClass(false)}>
