@@ -9,7 +9,7 @@ import { PinIcon, BellOffIcon } from "@/components/icons";
 import TimeText from "@/components/TimeText";
 import { usePartnerOnline } from "@/lib/presence";
 import { setConversationFlag } from "@/lib/actions";
-import { SHOW_COUPLE_FEATURES } from "@/lib/featureFlags";
+import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
 import type { ConversationSummary } from "@/lib/types";
 
 // Vuốt trái lộ 2 nút hành động (Ghim, Tắt thông báo) — mỗi nút rộng 72px.
@@ -96,7 +96,7 @@ export default function ConversationRow({
           const shouldOpen = x.get() < -OPEN_THRESHOLD || info.velocity.x < -400;
           animate(x, shouldOpen ? -ACTIONS_TOTAL : 0, { type: "spring", stiffness: 500, damping: 40 });
         }}
-        className="glass-surface relative rounded-[26px] border border-white/5"
+        className="glass-surface relative rounded-3xl"
       >
         <a
           href="/chat"
@@ -129,7 +129,7 @@ export default function ConversationRow({
                 <Avatar
                   url={conversation.partnerProfile?.avatar_url}
                   name={conversation.nickname || conversation.petName}
-                  size={56}
+                  size={54}
                 />
               </span>
             </span>
@@ -143,7 +143,7 @@ export default function ConversationRow({
               <span className="flex min-w-0 items-center gap-1">
                 {isPinned && <PinIcon className="h-3 w-3 shrink-0 text-[var(--muted)]" filled />}
                 <span
-                  className={`truncate text-[16px] ${
+                  className={`truncate text-[15px] ${
                     hasUnread ? "font-bold text-[var(--foreground)]" : "font-semibold text-[var(--foreground)]"
                   }`}
                 >

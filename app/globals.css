@@ -7,23 +7,27 @@
  * Xem thêm .glass-surface / .glass-pill bên dưới cho lớp kính dùng chung.
  */
 :root {
-  --background: #0d0b12;
-  --background-elevated: #161320;
-  --foreground: #f6efe7;
-  --brand: #f0954a;
-  --brand-dark: #d9762c;
-  --brand-light: rgba(240, 149, 74, 0.16);
-  --surface: #1a1626;
-  --surface-glass: rgba(255, 255, 255, 0.06);
+  /* Theme "Mono Editorial" — đen tuyền + trắng/xám trung tính, phỏng theo
+     bộ 3 màn hình tham chiếu (danh sách chat / thread / profile nền đen,
+     chữ trắng, accent gần như không màu). --brand vẫn giữ vai trò "màu
+     nhấn theo cuộc trò chuyện" (đổi được trong Cài đặt chat) nhưng giá trị
+     MẶC ĐỊNH giờ là trắng ngà trung tính thay vì cam ấm trước đây. */
+  --background: #0a0a0b;
+  --background-elevated: #131314;
+  --foreground: #f5f5f6;
+  --brand: #e8e8ea;
+  --brand-dark: #c2c2c6;
+  --brand-light: rgba(232, 232, 234, 0.14);
+  --surface: #151516;
+  --surface-glass: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.1);
-  --muted: #a89686;
+  --muted: #8f8f94;
   --danger: #ff4d4d;
-  /* Cặp màu lạnh cố định (không đổi theo theme cuộc trò chuyện) — trộn cùng
-     --brand động để nền luôn có ít nhất 2 tông màu, tránh cảm giác đơn sắc
-     dù người dùng chọn theme màu nào. Lấy cảm hứng từ các ảnh tham chiếu
-     (nền xanh dương-tím sâu, không phải 1 màu nâu phẳng). */
-  --accent-violet: #6d5bd0;
-  --accent-blue: #3f7ed6;
+  /* Trước đây 2 màu lạnh cố định (tím/xanh) trộn cùng --brand để nền danh
+     sách luôn loang màu — giờ theo hướng mono nên đổi thành 2 sắc xám khác
+     độ sáng, giữ nguyên cấu trúc gradient 3 lớp nhưng không còn ám màu. */
+  --accent-violet: #3a3a3d;
+  --accent-blue: #2a2a2c;
   --online: #34d399;
 }
 

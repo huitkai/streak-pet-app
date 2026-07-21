@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile } from "@/lib/actions";
 import { CameraIcon, FlameIcon, ImageIcon, SparkleIcon } from "@/components/icons";
+import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
 import type { ProfileRow } from "@/lib/types";
 
 export interface ProfileStatItem {
@@ -48,6 +49,30 @@ export function GlassStatCards({ stats }: { stats: ProfileStatItem[] }) {
             </span>
           </div>
           <span className="text-[11px] font-medium text-white/75">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export interface ProfilePipeStat {
+  value: string;
+  label: string;
+}
+
+/** Hàng số liệu "1.2K Followers | 287 Following | 47 Posts | High Activity"
+ * giống ảnh tham chiếu — số lớn/đậm, nhãn nhỏ bên dưới, ngăn cách bằng vạch
+ * dọc mảnh. TODO: 4 chỉ số này hiện là placeholder tĩnh (chưa có nguồn dữ
+ * liệu followers/following/posts thật — app đang là chat 1-1, chưa có khái
+ * niệm follow), nối API thật sau. */
+export function ProfilePipeStats({ stats }: { stats: ProfilePipeStat[] }) {
+  if (stats.length === 0) return null;
+  return (
+    <div className="flex w-full max-w-sm items-start justify-center divide-x divide-white/15">
+      {stats.map((s, i) => (
+        <div key={i} className="flex flex-1 flex-col items-center gap-0.5 px-2 text-center">
+          <span className="text-[17px] font-bold leading-none text-white">{s.value}</span>
+          <span className="text-[11px] font-medium leading-tight text-white/60">{s.label}</span>
         </div>
       ))}
     </div>
@@ -369,7 +394,18 @@ export default function ProfileEditor({
           </div>
         )}
 
-        {stats.length > 0 && (
+        <div className="mt-6 w-full">
+          <ProfilePipeStats
+            stats={[
+              { value: "0", label: "Followers" },
+              { value: "0", label: "Following" },
+              { value: "0", label: "Posts" },
+              { value: "N/A", label: "Activity" },
+            ]}
+          />
+        </div>
+
+        {SHOW_COUPLE_FEATURES && stats.length > 0 && (
           <div className="mt-7 w-full max-w-sm">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/60">
               Thống kê
