@@ -16,6 +16,7 @@ import PetShowcaseCard from "@/components/PetShowcaseCard";
 import { ArrowLeftIcon, PawIcon } from "@/components/icons";
 import { STAGE_ORDER, type PetSpecies } from "@/lib/pets";
 import type { PetAccessoryValue } from "@/lib/types";
+import { SHOW_COUPLE_FEATURES } from "@/lib/featureFlags";
 
 export default async function ProfilePage({
   params,
@@ -93,24 +94,32 @@ export default async function ProfilePage({
   // trên, để mỗi card mang một lát cắt riêng — giống Sessions/Age/Videos.
   const stats: ProfileStatItem[] = couple
     ? [
-        { icon: "flame", value: streakCurrent, label: "Chuỗi ngày" },
+        ...(SHOW_COUPLE_FEATURES ? [{ icon: "flame" as const, value: streakCurrent, label: "Chuỗi ngày" }] : []),
         { icon: "image", value: photoCount, label: "Ảnh đã gửi" },
-        {
-          icon: "stage",
-          value: `${STAGE_ORDER.indexOf((petStage as (typeof STAGE_ORDER)[number]) || "egg") + 1}/5`,
-          label: "Cấp độ thú cưng",
-        },
+        ...(SHOW_COUPLE_FEATURES
+          ? [
+              {
+                icon: "stage" as const,
+                value: `${STAGE_ORDER.indexOf((petStage as (typeof STAGE_ORDER)[number]) || "egg") + 1}/5`,
+                label: "Cấp độ thú cưng",
+              },
+            ]
+          : []),
       ]
     : [];
 
+  // Ẩn nhãn/tag liên quan tới ghép cặp trên UI (giữ nguyên dữ liệu couple/
+  // pet phía trên) — bật lại SHOW_COUPLE_FEATURES khi cần triển khai lại.
   const tags: ProfileTagItem[] = [];
-  if (isSelf) {
-    tags.push({ label: isPartner || couple ? "Đã ghép cặp" : "Đang độc thân" });
-  } else {
-    tags.push({ label: "Đối tác của bạn" });
-  }
-  if (couple && species) {
-    tags.push({ emoji: "🐾", label: couple.pet_name });
+  if (SHOW_COUPLE_FEATURES) {
+    if (isSelf) {
+      tags.push({ label: isPartner || couple ? "Đã ghép cặp" : "Đang độc thân" });
+    } else {
+      tags.push({ label: "Đối tác của bạn" });
+    }
+    if (couple && species) {
+      tags.push({ emoji: "🐾", label: couple.pet_name });
+    }
   }
 
   return (
@@ -130,15 +139,17 @@ export default async function ProfilePage({
           {isSelf ? (
             <ProfileEditor userId={user.id} profile={targetProfile} stats={stats} tags={tags} eyebrow={eyebrow} />
           ) : (
-            <div className="relative isolate flex min-h-[600px] flex-col items-center overflow-hidden pb-8 pt-24">
+            <div className="relative isolate flex min-h-[600px] flex-col items-start overflow-hidden pb-8 pt-24">
               <HeroBackground imageUrl={targetProfile.banner_url || targetProfile.avatar_url} />
 
-              <div className="flex flex-1 flex-col items-center justify-end px-5 pt-40">
-                <HeroBadge label="Thú cưng chung">
-                  <PawIcon className="h-5 w-5" />
-                </HeroBadge>
+              <div className="flex w-full flex-1 flex-col items-start justify-end px-5 pt-40 text-left">
+                {SHOW_COUPLE_FEATURES && (
+                  <HeroBadge label="Thú cưng chung">
+                    <PawIcon className="h-5 w-5" />
+                  </HeroBadge>
+                )}
 
-                {eyebrow && (
+                {SHOW_COUPLE_FEATURES && eyebrow && (
                   <div className="mt-3">
                     <HeroEyebrow value={eyebrow.value} label={eyebrow.label} />
                   </div>
@@ -147,10 +158,45 @@ export default async function ProfilePage({
                 <p className="mt-1.5 text-[26px] font-bold leading-tight text-white drop-shadow-sm">
                   {targetProfile.display_name || "Người ấy"}
                 </p>
+                <p className="text-[13px] font-medium text-white/60">
+                  @{(targetProfile.display_name || "nguoiay").toLowerCase().replace(/\s+/g, "")}
+                </p>
 
-                <div className="mt-3">
-                  <GlassTagRow tags={tags} />
+                {/* Hàng thống kê ngang kiểu "1.2K Followers | 287 Following | 47 Posts"
+                    — chưa có dữ liệu follower thật nên tạm hiển thị 0, phần này sẽ
+                    nối API thật sau. */}
+                <div className="mt-4 flex items-center gap-4 text-left">
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-base font-bold text-white">0</span>
+                    <span className="text-[12px] text-white/60">Người theo dõi</span>
+                  </span>
+                  <span className="h-3 w-px bg-white/20" />
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-base font-bold text-white">0</span>
+                    <span className="text-[12px] text-white/60">Đang theo dõi</span>
+                  </span>
+                  {stats.length > 0 && (
+                    <>
+                      <span className="h-3 w-px bg-white/20" />
+                      <span className="flex items-baseline gap-1">
+                        <span className="text-base font-bold text-white">
+                          {typeof stats[0].value === "number" ? stats[0].value : stats[0].value}
+                        </span>
+                        <span className="text-[12px] text-white/60">{stats[0].label}</span>
+                      </span>
+                    </>
+                  )}
                 </div>
+
+                <p className="mt-4 max-w-sm text-[14px] italic text-white/75">
+                  &ldquo;Kết nối, trò chuyện, chia sẻ mỗi ngày.&rdquo;
+                </p>
+
+                {tags.length > 0 && (
+                  <div className="mt-3">
+                    <GlassTagRow tags={tags} />
+                  </div>
+                )}
 
                 {stats.length > 0 && (
                   <div className="mt-7 w-full max-w-sm">
@@ -160,12 +206,21 @@ export default async function ProfilePage({
                     <GlassStatCards stats={stats} />
                   </div>
                 )}
+
+                {!isSelf && (
+                  <button
+                    type="button"
+                    className="mt-6 w-full max-w-sm rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-dark)] py-3 text-center text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
+                  >
+                    Nhắn tin
+                  </button>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {couple && species && (
+        {SHOW_COUPLE_FEATURES && couple && species && (
           <AmbientGlow>
             <PetShowcaseCard
               coupleId={couple.id}

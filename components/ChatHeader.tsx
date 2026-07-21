@@ -13,6 +13,7 @@ import Avatar from "@/components/Avatar";
 import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, VideoIcon } from "@/components/icons";
 import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
 import { useChatTheme } from "@/lib/chat-theme-context";
+import { SHOW_COUPLE_FEATURES } from "@/lib/featureFlags";
 
 export default function ChatHeader({
   coupleId,
@@ -136,7 +137,7 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-0.5 border-x-0 border-t-0 px-1 py-2.5">
+      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-0.5 rounded-b-3xl border-x-0 border-t-0 px-1.5 py-3">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"
@@ -145,32 +146,39 @@ export default function ChatHeader({
           <ChevronLeftIcon className="h-6 w-6" />
         </Link>
 
+        <span
+          className={`flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold ${
+            isPartnerOnline ? "text-emerald-400" : "text-[var(--muted)]"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${isPartnerOnline ? "bg-emerald-400" : "bg-[var(--muted)]"}`}
+          />
+          {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
+        </span>
+
         {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ, giống TikTok */}
         <Link
           href={partnerId ? `/profile/${partnerId}` : "#"}
-          className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
+          className="ml-auto flex min-w-0 max-w-[70%] items-center gap-2 rounded-full border border-white/10 bg-white/10 py-1 pl-1 pr-3 transition-transform active:scale-[0.98] active:opacity-80"
         >
           <span
             className={`relative shrink-0 rounded-full p-[2px] ${isPartnerOnline ? "avatar-ring-online" : "avatar-ring-offline"}`}
           >
             <span className="block rounded-full border-2 border-[var(--background)]">
-              <Avatar url={partner?.avatar_url} name={nickname || petName} size={34} />
+              <Avatar url={partner?.avatar_url} name={nickname || petName} size={30} />
             </span>
             {isPartnerOnline && (
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
             )}
           </span>
           <div className="flex min-w-0 flex-1 flex-col items-start text-left">
-            {/* Streak trước đây gắn làm huy hiệu ở góc avatar (36px) -> viên
-                pill lửa+số lớn hơn hẳn góc avatar nên đè lên che mất mặt
-                avatar. Dời hẳn ra khỏi avatar, đặt thành 1 chip nhỏ đi kèm
-                ngay sau tên (giữa dòng, cùng baseline) — vẫn bấm được để mở
-                PetSheet, nhưng không còn chồng lấn/che bất kỳ phần nào của
-                avatar nữa. Tên dùng min-w-0 + truncate để tự nhường chỗ cho
-                chip khi tên dài, chip luôn giữ nguyên kích thước (shrink-0). */}
+            {/* Streak trước đây gắn làm huy hiệu ở góc avatar -> giờ chỉ
+                ẩn hiển thị theo SHOW_COUPLE_FEATURES (bật lại được sau),
+                logic PetSheet/streak phía dưới KHÔNG bị xoá. */}
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
-              {streak.current_streak > 0 && (
+              <span className="truncate text-[13px] font-semibold text-[var(--foreground)]">{nickname}</span>
+              {SHOW_COUPLE_FEATURES && streak.current_streak > 0 && (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -184,13 +192,6 @@ export default function ChatHeader({
                   <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
                 </button>
               )}
-            </span>
-            <span
-              className={`truncate text-[11px] ${
-                isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"
-              }`}
-            >
-              {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
             </span>
           </div>
         </Link>
