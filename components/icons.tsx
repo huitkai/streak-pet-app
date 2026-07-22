@@ -498,17 +498,22 @@ export function HomeIcon({ className = "w-5 h-5", strokeWidth = 1.8, filled = fa
   if (filled) {
     return (
       <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-        <path d="M12 2.6 2.4 10.8c-.4.35-.15 1 .35 1h2.15v8.1c0 .6.5 1.1 1.1 1.1h4.4v-6.2h3.2V21h4.4c.6 0 1.1-.5 1.1-1.1v-8.1h2.15c.5 0 .75-.65.35-1L12 2.6Z" />
+        <path d="M12 2.9c-1.4 0-2.8.5-3.9 1.4L6.3 5.9C4.85 7 4 8.7 4 10.5V16c0 2.2 1.8 4 4 4h8c2.2 0 4-1.8 4-4v-5.5c0-1.8-.85-3.5-2.3-4.6l-1.8-1.6C14.8 3.4 13.4 2.9 12 2.9Z" />
       </svg>
     );
   }
   return (
     <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={strokeWidth}>
-      <path d="M3.5 11.2 12 3.5l8.5 7.7" />
-      <path d="M5.5 9.8V19a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4.3h4V19a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.8" />
+      <path
+        d="M4 11.2C4 9.4 4.85 7.7 6.3 6.6L9.8 3.9C11.1 2.9 12.9 2.9 14.2 3.9L17.7 6.6C19.15 7.7 20 9.4 20 11.2V16C20 18.2 18.2 20 16 20H8C5.8 20 4 18.2 4 16V11.2Z"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
+
+
+
 
 /** La bàn (Explore/Search) — icon dạng compass giống tab Khám phá của Instagram. */
 export function CompassIcon({ className = "w-5 h-5", strokeWidth = 1.8 }: IconProps) {

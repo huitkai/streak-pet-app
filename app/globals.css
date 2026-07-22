@@ -1,34 +1,29 @@
 @import "tailwindcss";
 
 /*
- * Theme "Dark Glass" — nền nâu-đen ấm + card kính mờ (backdrop-blur), viền
- * trắng mờ, chữ trắng ngà, điểm nhấn cam hổ phách (amber) cho hành động
- * chính + đỏ cho badge chưa đọc. Thay cho theme hồng-trắng cũ.
- * Xem thêm .glass-surface / .glass-pill bên dưới cho lớp kính dùng chung.
+ * Theme "Ember Black" — nền đen tuyền + điểm nhấn đỏ-cam rực, thay cho
+ * theme nâu-hồng "Dark Glass" cũ. Giữ nguyên toàn bộ tên biến CSS
+ * (--background, --brand, --surface...) để các component khác không phải
+ * sửa lại, chỉ đổi giá trị hex.
  */
 :root {
-  /* Theme "Mono Editorial" — đen tuyền + trắng/xám trung tính, phỏng theo
-     bộ 3 màn hình tham chiếu (danh sách chat / thread / profile nền đen,
-     chữ trắng, accent gần như không màu). --brand vẫn giữ vai trò "màu
-     nhấn theo cuộc trò chuyện" (đổi được trong Cài đặt chat) nhưng giá trị
-     MẶC ĐỊNH giờ là trắng ngà trung tính thay vì cam ấm trước đây. */
-  --background: #0a0a0b;
-  --background-elevated: #131314;
-  --foreground: #f5f5f6;
-  --brand: #e8e8ea;
-  --brand-dark: #c2c2c6;
-  --brand-light: rgba(232, 232, 234, 0.14);
-  --surface: #151516;
-  --surface-glass: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.1);
-  --muted: #8f8f94;
+  --background: #0a0a0a;
+  --background-elevated: #141414;
+  --foreground: #f5ece6;
+  --brand: #ff5a36;
+  --brand-dark: #d43f21;
+  --brand-light: rgba(255, 90, 54, 0.16);
+  --surface: #161616;
+  --surface-glass: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #9a9a9a;
   --danger: #ff4d4d;
-  /* Trước đây 2 màu lạnh cố định (tím/xanh) trộn cùng --brand để nền danh
-     sách luôn loang màu — giờ theo hướng mono nên đổi thành 2 sắc xám khác
-     độ sáng, giữ nguyên cấu trúc gradient 3 lớp nhưng không còn ám màu. */
-  --accent-violet: #3a3a3d;
-  --accent-blue: #2a2a2c;
-  --online: #34d399;
+  /* Cặp màu ấm cố định (không đổi theo theme cuộc trò chuyện) — trộn cùng
+     --brand động để nền luôn có chiều sâu, lấy cảm hứng từ mockup gốc
+     (đen tuyền + đỏ cam gradient), thay vì tím/xanh lạnh trước đây. */
+  --accent-violet: #ff8a3d;
+  --accent-blue: #b23a1f;
+  --online: #2dd47a;
 }
 
 @theme inline {
@@ -39,17 +34,16 @@
   --color-brand-light: var(--brand-light);
 }
 
-/* Nền tổng thể: DUOTONE — lớp lạnh (tím/xanh) cố định làm đáy chiều sâu +
-   lớp --brand động phủ lên theo theme cuộc trò chuyện đang chọn. Trước đây
-   chỉ có 1 tông nâu-cam nhạt nên nhìn phẳng/đơn sắc; giờ luôn có tối thiểu
-   2-3 vùng màu khác nhau loang vào nhau, giống các ảnh tham chiếu. Cố định
-   (fixed) để không "trôi" khi cuộn danh sách. */
+/* Nền tổng thể: DUOTONE ấm — đỏ-cam (--brand) hoà cùng cam sậm/đỏ nâu
+   (--accent-violet/--accent-blue, tên biến giữ nguyên từ theme cũ) trên nền
+   đen tuyền, giống ảnh tham chiếu (đen + đỏ cam gradient), không còn tông
+   tím-xanh lạnh. Cố định (fixed) để không "trôi" khi cuộn danh sách. */
 .app-ambient-bg {
   background:
-    radial-gradient(85% 55% at 12% -8%, color-mix(in srgb, var(--brand) 38%, transparent) 0%, transparent 60%),
-    radial-gradient(90% 60% at 105% 6%, color-mix(in srgb, var(--accent-violet) 40%, transparent) 0%, transparent 62%),
-    radial-gradient(80% 50% at 50% 115%, color-mix(in srgb, var(--accent-blue) 30%, transparent) 0%, transparent 65%),
-    linear-gradient(180deg, #14101c 0%, #0f0c14 55%, #0a080d 100%);
+    radial-gradient(85% 55% at 12% -8%, color-mix(in srgb, var(--brand) 30%, transparent) 0%, transparent 60%),
+    radial-gradient(90% 60% at 105% 6%, color-mix(in srgb, var(--accent-violet) 26%, transparent) 0%, transparent 62%),
+    radial-gradient(80% 50% at 50% 115%, color-mix(in srgb, var(--accent-blue) 24%, transparent) 0%, transparent 65%),
+    linear-gradient(180deg, #0f0a08 0%, #0a0807 55%, #060504 100%);
 }
 
 /* Card/thanh kính mờ dùng chung: header, ô tìm kiếm, hàng hội thoại, tab bar,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ConversationRow from "@/components/ConversationRow";
 import InstantSessionFlow from "@/components/InstantSessionFlow";
 import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
@@ -26,6 +26,13 @@ export default function ConversationListClient({
   // tử đầu tiên. Khi mở rộng nhiều cuộc trò chuyện sẽ cần cho người dùng
   // chọn gửi vào hội thoại nào trước khi mở camera.
   const activeCoupleId = conversations[0]?.id ?? null;
+
+  useEffect(() => {
+    if (!activeCoupleId) return;
+    const handler = () => setInstantOpen(true);
+    window.addEventListener("sp:open-camera", handler);
+    return () => window.removeEventListener("sp:open-camera", handler);
+  }, [activeCoupleId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -137,20 +144,9 @@ export default function ConversationListClient({
             bạn bè, anh chị em... — chỉ cần đổ thêm vào mảng `conversations`. */}
       </div>
 
-      {/* Nút "+" nổi kiểu Messenger — bấm vào MỞ THẲNG CAMERA, không qua menu
-          trung gian nào. Đặt trên MobileTabBar (chỉ hiện <768px) nên chỉ
-          hiện ở mobile, giống đúng vị trí trong ảnh tham khảo. */}
-      {activeCoupleId && (
-        <button
-          type="button"
-          onClick={() => setInstantOpen(true)}
-          aria-label="Chụp ảnh tức thì"
-          className="safe-bottom fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_10px_28px_-6px_rgba(240,149,74,0.55)] transition active:scale-90 md:hidden"
-          style={{ background: "linear-gradient(135deg, var(--brand) 0%, var(--accent-violet) 130%)" }}
-        >
-          <PlusIcon className="h-6 w-6" strokeWidth={2.2} />
-        </button>
-      )}
+      {/* Nút chụp nhanh giờ nằm trong MobileTabBar (hàng nút nổi màu trắng,
+          icon camera) — ở đây chỉ lắng nghe sự kiện "sp:open-camera" mà
+          MobileTabBar phát ra khi bấm, để mở InstantSessionFlow bên dưới. */}
 
       {comingSoonOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
