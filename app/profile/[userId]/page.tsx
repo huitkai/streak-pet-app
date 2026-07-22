@@ -150,6 +150,15 @@ export default async function ProfilePage({
                   {targetProfile.display_name || "Người ấy"}
                 </p>
 
+                {/* Quote + bio đúng mockup — TODO: chưa có cột quote/bio thật
+                    trong ProfileRow, đặt sẵn UI, đổ dữ liệu thật khi có. */}
+                <p className="mt-2 max-w-xs text-center text-[15px] font-semibold text-white/90">
+                  &ldquo;Chưa có câu giới thiệu&rdquo;
+                </p>
+                <p className="mt-1.5 max-w-xs text-center text-[12.5px] leading-relaxed text-white/60">
+                  Chưa có tiểu sử.
+                </p>
+
                 <div className="mt-3">
                   <GlassTagRow tags={tags} />
                 </div>
@@ -173,6 +182,28 @@ export default async function ProfilePage({
                     <GlassStatCards stats={stats} />
                   </div>
                 )}
+
+                {/* Lưới "Chats" đúng mockup (.chats-grid: các ô chủ đề/nhóm
+                    ảnh nhỏ) — TODO: app hiện chưa có khái niệm nhiều nhóm
+                    chat/chủ đề theo từng hồ sơ, đây là chỗ đặt sẵn UI khung
+                    (viền nét đứt, không bịa ảnh/số liệu giả), đổ dữ liệu
+                    thật (ảnh đại diện nhóm + số thành viên) khi có tính năng
+                    nhóm/chủ đề. */}
+                <div className="mt-7 w-full max-w-sm">
+                  <p className="mb-2.5 text-left text-xs font-semibold uppercase tracking-wide text-white/60">
+                    Chats
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {[0, 1].map((i) => (
+                      <div
+                        key={i}
+                        className="flex h-[100px] items-end rounded-2xl border border-dashed border-white/20 bg-white/5 p-2.5"
+                      >
+                        <span className="text-[11px] text-white/40">Chưa có dữ liệu</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}

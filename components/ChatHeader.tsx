@@ -10,7 +10,7 @@ import PetSheet from "@/components/PetSheet";
 import ChatSettingsSheet from "@/components/ChatSettingsSheet";
 import PetEvolutionCelebration from "@/components/PetEvolutionCelebration";
 import Avatar from "@/components/Avatar";
-import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, VideoIcon } from "@/components/icons";
+import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, ImageIcon } from "@/components/icons";
 import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
 import { useChatTheme } from "@/lib/chat-theme-context";
 import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
@@ -137,95 +137,82 @@ export default function ChatHeader({
 
   return (
     <>
-      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-0.5 border-x-0 border-t-0 px-1 py-2.5">
+      {/* Header nổi TRONG SUỐT đè lên ảnh nền cover (.chat-photo-bg) thay vì
+          1 thanh glass-surface đặc chạy hết chiều ngang như trước — đúng bố
+          cục mockup: nút back tròn riêng biệt bên trái, cụm avatar+tên dạng
+          "pill" kính mờ riêng biệt bên phải, không có thanh nền chung. */}
+      <header className="safe-top relative z-20 flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
         <Link
           href="/"
           aria-label="Về danh sách trò chuyện"
-          className="flex h-10 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-white/10"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
         >
-          <ChevronLeftIcon className="h-6 w-6" />
+          <ChevronLeftIcon className="h-5 w-5" />
         </Link>
 
-        {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ, giống TikTok */}
-        <Link
-          href={partnerId ? `/profile/${partnerId}` : "#"}
-          className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
-        >
-          <span
-            className={`relative shrink-0 rounded-full p-[2px] ${isPartnerOnline ? "avatar-ring-online" : "avatar-ring-offline"}`}
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+          {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ */}
+          <Link
+            href={partnerId ? `/profile/${partnerId}` : "#"}
+            className="flex min-w-0 items-center gap-2 rounded-full border border-white/15 bg-black/35 py-1.5 pl-1.5 pr-3.5 backdrop-blur-md transition active:scale-[0.98] active:bg-black/50"
           >
-            <span className="block rounded-full border-2 border-[var(--background)]">
-              <Avatar url={partner?.avatar_url} name={nickname || petName} size={34} />
+            <span className="relative shrink-0">
+              <Avatar url={partner?.avatar_url} name={nickname || petName} size={28} />
+              {isPartnerOnline && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-black/60 bg-emerald-400" />
+              )}
             </span>
-            {isPartnerOnline && (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
-            )}
-          </span>
-          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
-            {/* Streak trước đây gắn làm huy hiệu ở góc avatar (36px) -> viên
-                pill lửa+số lớn hơn hẳn góc avatar nên đè lên che mất mặt
-                avatar. Dời hẳn ra khỏi avatar, đặt thành 1 chip nhỏ đi kèm
-                ngay sau tên (giữa dòng, cùng baseline) — vẫn bấm được để mở
-                PetSheet, nhưng không còn chồng lấn/che bất kỳ phần nào của
-                avatar nữa. Tên dùng min-w-0 + truncate để tự nhường chỗ cho
-                chip khi tên dài, chip luôn giữ nguyên kích thước (shrink-0). */}
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
+            <span className="flex min-w-0 flex-col items-start text-left leading-tight">
+              <span className="truncate text-[13.5px] font-semibold text-white">{nickname}</span>
               {SHOW_COUPLE_FEATURES && streak.current_streak > 0 && (
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     setSheetOpen(true);
                   }}
-                  aria-label="Xem chuỗi và pet"
-                  className="shrink-0 transition active:scale-90"
+                  className="text-[10px] text-white/70"
                 >
                   <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
-                </button>
+                </span>
               )}
             </span>
-            <span
-              className={`truncate text-[11px] ${
-                isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"
-              }`}
-            >
-              {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
-            </span>
-          </div>
-        </Link>
+          </Link>
 
-        {/* Gọi thoại/video: giữ nguyên chỗ này, backend nối sau. Tăng kích
-            thước icon lên (avatar đã thu nhỏ) để hài hoà, cân đối hơn giữa
-            avatar nhỏ và cụm nút bên phải, giống ảnh tham khảo. */}
-        <button
-          type="button"
-          aria-label="Gọi thoại"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
-        >
-          <PhoneIcon className="h-5 w-5" strokeWidth={1.8} />
-        </button>
+          <button
+            type="button"
+            aria-label="Gọi thoại"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
+          >
+            <PhoneIcon className="h-4 w-4" strokeWidth={1.8} />
+          </button>
 
-        <button
-          type="button"
-          aria-label="Gọi video"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
-        >
-          <VideoIcon className="h-5 w-5" strokeWidth={1.8} />
-        </button>
-
-        {/* Icon "..." nằm ngang cũ tốn bề ngang hơn -> đổi thành 3 chấm nằm
-            dọc (MoreVerticalIcon), gọn hơn để không góp phần gây chồng nút. */}
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Tuỳ chỉnh đoạn chat"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
-        >
-          <MoreVerticalIcon className="h-5 w-5" />
-        </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Tuỳ chỉnh đoạn chat"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
+          >
+            <MoreVerticalIcon className="h-4 w-4" />
+          </button>
+        </div>
       </header>
+
+      {/* "Tag row" đúng mockup (.tag-row: #art + 2 stat) — TODO: app 1-1 hiện
+          chưa có khái niệm "chủ đề"/"lượt thích" của 1 cuộc trò chuyện; tạm
+          hiện trạng thái online như 1 tag thật + số ảnh đã gửi làm stat thật
+          (initialPhotoCount), thay bằng dữ liệu tag/chủ đề thật khi có. */}
+      <div className="relative z-20 flex shrink-0 items-center gap-2.5 px-4 pb-4">
+        <span className="rounded-full bg-black/45 px-3.5 py-1.5 text-[12px] font-semibold text-white backdrop-blur-md">
+          {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
+        </span>
+        <span className="flex items-center gap-1.5 text-[12px] text-white/85">
+          <ImageIcon className="h-3.5 w-3.5" />
+          {initialPhotoCount}
+        </span>
+      </div>
 
       {sheetOpen && (
         <PetSheet
@@ -262,7 +249,7 @@ export default function ChatHeader({
         />
       )}
 
-      {celebrateStage && (
+      {SHOW_COUPLE_FEATURES && celebrateStage && (
         <PetEvolutionCelebration
           petName={petName}
           species={species}

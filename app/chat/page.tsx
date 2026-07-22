@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { checkStreakBreak } from "@/lib/actions";
@@ -73,7 +74,15 @@ export default async function ChatPage() {
         coupleId={couple.id}
         initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}
         initialAccessory={accessory}
-        className="app-ambient-bg flex flex-1 flex-col overflow-hidden"
+        className="chat-photo-bg flex flex-1 flex-col overflow-hidden"
+        style={
+          {
+            // Ảnh cover đúng mockup: banner nếu có, fallback avatar đối
+            // phương. Chưa có ảnh nào -> "none", nền rơi về --background đen
+            // phẳng (xem .chat-photo-bg trong globals.css).
+            "--chat-photo-url": partnerProfile?.avatar_url ? `url(${partnerProfile.avatar_url})` : "none",
+          } as CSSProperties
+        }
       >
         <ChatHeader
           coupleId={couple.id}

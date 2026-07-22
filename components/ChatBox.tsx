@@ -54,6 +54,7 @@ import {
 import Avatar from "@/components/Avatar";
 import FloatingPet from "@/components/FloatingPet";
 import { usePresenceHeartbeat, useTypingIndicator } from "@/lib/presence";
+import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
 
 const MAX_IMAGE_MB = 15;
 /** Long-press bao lâu (ms) thì mở thanh chọn cảm xúc nhanh — đủ để không kích
@@ -1569,7 +1570,9 @@ export default function ChatBox({
           </div>
         </div>
 
-        <FloatingPet species={species} stage={pet.stage} mood={pet.mood} variant={variant} accessory={accessory} bumpKey={messages.length} />
+        {SHOW_COUPLE_FEATURES && (
+          <FloatingPet species={species} stage={pet.stage} mood={pet.mood} variant={variant} accessory={accessory} bumpKey={messages.length} />
+        )}
       </div>
 
       {lightbox && (

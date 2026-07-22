@@ -50,12 +50,17 @@ export function ChatThemeProvider({
   initialThemeColor,
   initialAccessory,
   className,
+  style,
   children,
 }: {
   coupleId: string;
   initialThemeColor: string;
   initialAccessory?: PetAccessoryValue;
   className?: string;
+  /** Style bổ sung từ nơi gọi (vd nền ảnh cover riêng của phòng chat) — được
+   * gộp CÙNG với biến --brand/--brand-dark suy ra từ themeColor, không ghi
+   * đè lên nhau. */
+  style?: React.CSSProperties;
   children: ReactNode;
 }) {
   const [themeColor, setThemeColor] = useState(initialThemeColor || DEFAULT_THEME_COLOR);
@@ -84,7 +89,7 @@ export function ChatThemeProvider({
   }, [coupleId]);
 
   return (
-    <div className={className} style={themeCssVars(themeColor)}>
+    <div className={className} style={{ ...style, ...themeCssVars(themeColor) }}>
       <ChatThemeContext.Provider value={{ themeColor, setThemeColor, accessory, setAccessory }}>
         {children}
       </ChatThemeContext.Provider>

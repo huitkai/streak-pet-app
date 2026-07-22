@@ -143,26 +143,22 @@ export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
     // chỉ còn chữ trắng mờ trên nền hồng nhạt, trông như bị vỡ giao diện.
     // Container cha (bên dưới) đã thêm `isolate` để đảm bảo z-0 ở đây luôn
     // là lớp thấp nhất RIÊNG trong phạm vi hero, không ảnh hưởng ra ngoài.
-    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
+    <div className="absolute inset-0 z-0 overflow-hidden bg-[var(--background)]">
       {imageUrl ? (
+        // Đúng kỹ thuật "cover photo + blur + glass" trong globals.css
+        // (.cover-photo-frame): ảnh cover thật full-bleed phía trên, rồi
+        // phủ scrim tối dần xuống đúng màu --background để hoà liền mạch
+        // vào phần nội dung bên dưới — không còn dải màu xanh/hồng lệch
+        // tông so với theme "Ember Black" như trước.
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl}
-          alt=""
-          className="absolute inset-x-0 top-0 h-[62%] w-full object-cover opacity-95"
-          style={{
-            maskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
-          }}
-        />
+        <img src={imageUrl} alt="" className="absolute inset-x-0 top-0 h-[62%] w-full object-cover" />
       ) : (
-        // Chưa có ảnh: thay vì một khối màu phẳng (nhìn như hình vẽ trẻ
-        // con), phủ thêm vài quầng sáng mờ + noise nhẹ để có chiều sâu,
-        // gần với cảm giác "biên tập/editorial" của ảnh mẫu hơn.
+        // Chưa có ảnh: quầng sáng ấm (cam/đỏ) đúng bảng màu brand thay vì
+        // xanh dương/hồng, giữ noise nhẹ cho có chiều sâu.
         <div className="absolute inset-0 h-[62%] w-full overflow-hidden">
-          <div className="absolute -left-10 -top-16 h-64 w-64 rounded-full bg-white/25 blur-3xl" />
-          <div className="absolute -right-16 top-10 h-72 w-72 rounded-full bg-[#ffd7e8]/30 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[#4a5fb0]/30 blur-3xl" />
+          <div className="absolute -left-10 -top-16 h-64 w-64 rounded-full bg-[var(--brand)]/25 blur-3xl" />
+          <div className="absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent-violet)]/25 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[var(--brand-dark)]/25 blur-3xl" />
           <div
             className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
             style={{
@@ -172,7 +168,15 @@ export function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-black/10" />
+      {/* Scrim: nhạt ở đỉnh ảnh -> đen đặc dần về phía nội dung, đúng nhịp
+          mockup (.cover::after: rgba(0,0,0,.1) -> transparent 32% -> nền đen). */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 30%, var(--background) 92%)",
+        }}
+      />
     </div>
   );
 }
@@ -344,6 +348,19 @@ export default function ProfileEditor({
           {saved && <p className="mt-1 text-xs font-medium text-emerald-200">Đã lưu thay đổi ✓</p>}
         </div>
 
+        {/* "Quote" + bio đúng mockup (.quote/.bio) — TODO: ProfileRow chưa có
+            cột quote/bio thật, đây là chỗ đặt sẵn UI; khi có cột dữ liệu
+            (vd migration thêm profiles.quote, profiles.bio) chỉ cần đổ giá
+            trị thật vào 2 dòng này, không cần sửa lại layout. */}
+        <p className="mt-2 max-w-xs text-center text-[15px] font-semibold text-white/90">
+          {/* placeholder — chưa có dữ liệu quote thật */}
+          &ldquo;Chưa có câu giới thiệu&rdquo;
+        </p>
+        <p className="mt-1.5 max-w-xs text-center text-[12.5px] leading-relaxed text-white/60">
+          {/* placeholder — chưa có dữ liệu bio thật */}
+          Chưa có tiểu sử. Thêm mô tả ngắn về bạn ở đây.
+        </p>
+
         <div className="mt-3">
           <GlassTagRow tags={tags} />
         </div>
@@ -352,7 +369,8 @@ export default function ProfileEditor({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-4 w-full max-w-xs rounded-full border border-white/25 bg-white/12 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-xl transition active:scale-[0.98] active:bg-white/20"
+            className="mt-4 w-full max-w-xs rounded-full py-2.5 text-sm font-bold text-white shadow-[0_8px_24px_-6px_rgba(255,138,61,0.35)] transition active:scale-[0.98]"
+            style={{ background: "linear-gradient(90deg, #8a3fbf, #ff8a3d)" }}
           >
             Chỉnh sửa trang cá nhân
           </button>
@@ -413,6 +431,23 @@ export default function ProfileEditor({
             <GlassStatCards stats={stats} />
           </div>
         )}
+
+        {/* Lưới "Chats" đúng mockup — TODO: chưa có dữ liệu nhóm/chủ đề thật,
+            khung đặt sẵn (viền nét đứt, không bịa số liệu), đổ dữ liệu thật
+            khi có tính năng nhóm/chủ đề theo hồ sơ. */}
+        <div className="mt-7 w-full max-w-sm">
+          <p className="mb-2.5 text-left text-xs font-semibold uppercase tracking-wide text-white/60">Chats</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="flex h-[100px] items-end rounded-2xl border border-dashed border-white/20 bg-white/5 p-2.5"
+              >
+                <span className="text-[11px] text-white/40">Chưa có dữ liệu</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

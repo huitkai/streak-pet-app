@@ -46,6 +46,19 @@
     linear-gradient(180deg, #0f0a08 0%, #0a0807 55%, #060504 100%);
 }
 
+/* Nền phòng chat kiểu "ảnh cover full-bleed" đúng mockup 02-chat-room.html:
+   ảnh đại diện/bìa của đối phương (--chat-photo-url, đặt inline ở nơi gọi)
+   phủ kín màn hình, tối dần theo 3 mốc gradient rồi hoà hẳn vào nền đen
+   --background ở khoảng 72% chiều cao — giống hệt công thức
+   `linear-gradient(...), url(...)` trên .phone trong mockup gốc.
+   Không có ảnh (chưa có avatar) thì tự rơi về nền đen phẳng --background. */
+.chat-photo-bg {
+  background:
+    linear-gradient(180deg, rgba(30, 6, 3, 0.35) 0%, rgba(12, 3, 2, 0.88) 45%, var(--background) 72%),
+    var(--chat-photo-url, none) center/cover no-repeat,
+    var(--background);
+}
+
 /* Card/thanh kính mờ dùng chung: header, ô tìm kiếm, hàng hội thoại, tab bar,
    sheet... Nền bán trong suốt + blur + viền sáng mờ 1px kiểu iOS glass. */
 .glass-surface {

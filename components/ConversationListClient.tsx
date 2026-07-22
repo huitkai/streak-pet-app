@@ -3,8 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import ConversationRow from "@/components/ConversationRow";
 import InstantSessionFlow from "@/components/InstantSessionFlow";
-import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
+import Avatar from "@/components/Avatar";
+import { SearchIcon, ChatBubbleIcon } from "@/components/icons";
 import type { ConversationSummary, ProfileRow } from "@/lib/types";
+
+// Nhãn tab đúng theo mockup (01-chat-list.html): All / Personal / Groups /
+// Unanswered — kiểu gạch chân bên dưới tab đang chọn, KHÔNG còn dạng pill
+// filled như trước. "groups" hiện chưa có nguồn dữ liệu (app chưa có khái
+// niệm nhóm) nên luôn rỗng kèm empty-state riêng — chỉ cần đổ thêm dữ liệu
+// group vào `conversations` (type: "group") sau này là tab này chạy được
+// ngay, không cần sửa lại UI.
+const TABS = [
+  { key: "all", label: "All" },
+  { key: "personal", label: "Personal" },
+  { key: "groups", label: "Groups" },
+  { key: "unanswered", label: "Unanswered" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
 
 export default function ConversationListClient({
   conversations,
@@ -17,10 +32,9 @@ export default function ConversationListClient({
   /** Nếu couple của mình chưa có đủ 2 người, truyền mã mời để hiện banner chờ. */
   waitingInviteCode: string | null;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"all" | "unread" | "pinned">("all");
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [tab, setTab] = useState<TabKey>("all");
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
   const [instantOpen, setInstantOpen] = useState(false);
   // Hiện tại app chỉ hỗ trợ đúng 1 cuộc trò chuyện (couple) — lấy id từ phần
   // tử đầu tiên. Khi mở rộng nhiều cuộc trò chuyện sẽ cần cho người dùng
@@ -41,87 +55,106 @@ export default function ConversationListClient({
       : conversations.filter(
           (c) => c.nickname.toLowerCase().includes(q) || c.previewText.toLowerCase().includes(q)
         );
-    if (tab === "unread") base = base.filter((c) => c.unreadCount > 0);
-    if (tab === "pinned") base = base.filter((c) => c.isPinned);
-    // Hội thoại đã ghim luôn nổi lên đầu danh sách (chưa có ý nghĩa nhiều khi
-    // chỉ có 1 hội thoại duy nhất, nhưng sẵn sàng cho lúc mở rộng bạn bè/
-    // người thân — xem ghi chú trong ConversationSummary).
+    if (tab === "personal") base = base.filter((c) => c.type === "couple" || c.type === "friend" || c.type === "family");
+    // TODO: chưa có type "group" trong ConversationSummary/DB — khi có, lọc
+    // ở đây (c.type === "group"). Hiện luôn rỗng, hiển thị empty-state riêng.
+    if (tab === "groups") base = [];
+    if (tab === "unanswered") base = base.filter((c) => c.unreadCount > 0);
+    // Hội thoại đã ghim luôn nổi lên đầu danh sách.
     return [...base].sort((a, b) => Number(b.isPinned) - Number(a.isPinned));
   }, [conversations, query, tab]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden text-[var(--foreground)]">
-      <header className="safe-top flex shrink-0 items-center justify-between gap-3 px-5 pb-3">
-        {searchOpen ? (
-          <div className="glass-pill flex flex-1 items-center gap-2 rounded-full px-4 py-2.5">
-            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm hội thoại..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setSearchOpen(false);
-                setQuery("");
-              }}
-              aria-label="Đóng tìm kiếm"
-              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90"
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-[28px] font-bold tracking-tight text-[var(--foreground)]">Chats</h1>
-            <div className="flex items-center gap-2">
-              {conversations.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  aria-label="Tìm hội thoại"
-                  className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
-                >
-                  <SearchIcon className="h-[17px] w-[17px]" />
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setComingSoonOpen(true)}
-                aria-label="Tạo hội thoại mới"
-                className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
-              >
-                <PlusIcon className="h-[17px] w-[17px]" />
-              </button>
-            </div>
-          </>
-        )}
+      <header className="safe-top flex shrink-0 items-center justify-between gap-3 px-5 pb-4">
+        <h1 className="text-[28px] font-bold tracking-tight text-[var(--foreground)]">Chats</h1>
+        <button
+          type="button"
+          onClick={() => setAdvancedSearchOpen(true)}
+          aria-label="Tìm kiếm nâng cao"
+          className="glass-pill flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
+        >
+          <SearchIcon className="h-[17px] w-[17px]" />
+        </button>
       </header>
 
-      {!searchOpen && conversations.length > 0 && (
-        <div className="thin-scroll flex shrink-0 items-center gap-2 overflow-x-auto px-5 pb-3">
-          {(["all", "unread", "pinned"] as const).map((key) => {
-            const active = tab === key;
-            const label = key === "all" ? "Tất cả" : key === "unread" ? "Chưa đọc" : "Đã ghim";
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={`segmented-tab shrink-0 rounded-full px-4 py-1.5 text-[13px] ${active ? "segmented-tab-active" : ""}`}
-              >
-                {label}
-              </button>
-            );
-          })}
+      {/* Ô tìm kiếm luôn hiển thị (không còn ẩn/hiện qua icon) — đúng bố cục
+          mockup, nơi search box nằm cố định ngay dưới tiêu đề "Chats". */}
+      <div className="shrink-0 px-5 pb-4">
+        <div className="glass-pill flex items-center gap-2.5 rounded-2xl px-4 py-3">
+          <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm kiếm"
+            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+          />
+        </div>
+      </div>
+
+      {/* Tabs dạng gạch chân, không phải pill — đúng .tabs trong mockup. */}
+      <div className="thin-scroll flex shrink-0 items-center gap-6 overflow-x-auto px-5 pb-4">
+        {TABS.map(({ key, label }) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`shrink-0 border-b-2 pb-1.5 text-[15px] transition ${
+                active
+                  ? "border-[var(--foreground)] font-bold text-[var(--foreground)]"
+                  : "border-transparent font-medium text-[var(--muted)]"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Hàng "stories" (avatar viền gradient + badge số) giống mockup —
+          TODO: chưa có tính năng story/khoảnh khắc thật, đang tạm dùng lại
+          avatar + unreadCount của chính cuộc trò chuyện làm placeholder có
+          dữ liệu thật (không phải số giả), thay bằng nguồn story riêng khi
+          tính năng đó được xây dựng. */}
+      {conversations.length > 0 && (
+        <div className="thin-scroll flex shrink-0 items-center gap-4 overflow-x-auto px-5 pb-5">
+          {conversations.map((c) => (
+            <button
+              key={`story-${c.id}`}
+              type="button"
+              onClick={() => (window.location.href = "/chat")}
+              aria-label={`Xem story của ${c.nickname}`}
+              className="relative h-[58px] w-[58px] shrink-0 transition active:scale-95"
+            >
+              <span className="avatar-ring-online block h-full w-full rounded-full p-[2.5px]">
+                <span className="block h-full w-full rounded-full border-[2.5px] border-[var(--background)]">
+                  <Avatar url={c.partnerProfile?.avatar_url} name={c.nickname} size={53} />
+                </span>
+              </span>
+              {c.unreadCount > 0 && (
+                <span className="unread-dot absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-[var(--background)] px-1 text-[11px] font-bold text-white">
+                  {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-3 pb-4">
+      {/* Section label + sub — đúng nhịp "People / Friends' recommendations"
+          trong mockup. TODO: app hiện chưa có khái niệm gợi ý bạn bè, dùng
+          nhãn trung tính phù hợp với app chat 1-1 hiện tại; đổi lại khi có
+          tính năng gợi ý thật. */}
+      {conversations.length > 0 && (
+        <div className="shrink-0 px-5 pb-1">
+          <h2 className="text-[21px] font-bold text-[var(--foreground)]">Trò chuyện</h2>
+          <p className="pb-1 text-[13px] text-[var(--muted)]">Các cuộc trò chuyện gần đây</p>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
         {waitingInviteCode ? (
           <div className="glass-surface mx-1 mt-4 rounded-3xl p-5 text-center">
             <p className="text-sm text-[var(--muted)]">
@@ -133,7 +166,11 @@ export default function ConversationListClient({
           <div className="mx-4 mt-10 flex flex-col items-center text-center">
             <ChatBubbleIcon className="h-9 w-9 text-[var(--muted)]" />
             <p className="mt-2 text-sm text-[var(--muted)]">
-              {query ? "Không tìm thấy hội thoại nào phù hợp." : "Chưa có hội thoại nào."}
+              {tab === "groups"
+                ? "Chưa có nhóm nào — tính năng nhóm sẽ sớm ra mắt."
+                : query
+                  ? "Không tìm thấy hội thoại nào phù hợp."
+                  : "Chưa có hội thoại nào."}
             </p>
           </div>
         ) : (
@@ -148,21 +185,22 @@ export default function ConversationListClient({
           icon camera) — ở đây chỉ lắng nghe sự kiện "sp:open-camera" mà
           MobileTabBar phát ra khi bấm, để mở InstantSessionFlow bên dưới. */}
 
-      {comingSoonOpen && (
+      {advancedSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setComingSoonOpen(false)} aria-hidden />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAdvancedSearchOpen(false)} aria-hidden />
           <div className="glass-surface safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl p-6 text-center shadow-xl">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand)]">
-              <ChatBubbleIcon className="h-6 w-6" />
+              <SearchIcon className="h-6 w-6" />
             </div>
-            <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Sắp ra mắt</h2>
+            <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Tìm kiếm nâng cao</h2>
+            {/* TODO: chưa có bộ lọc nâng cao thật (theo ngày, theo loại tin
+                nhắn...) — đây là chỗ đặt sẵn UI, nối logic lọc thật sau. */}
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Trò chuyện với bạn bè và người thân đang được phát triển — hiện app chỉ hỗ trợ 1 cuộc trò
-              chuyện với người ấy của bạn.
+              Bộ lọc tìm kiếm nâng cao đang được phát triển — hiện dùng ô tìm kiếm phía trên để lọc theo tên.
             </p>
             <button
               type="button"
-              onClick={() => setComingSoonOpen(false)}
+              onClick={() => setAdvancedSearchOpen(false)}
               className="mt-4 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-semibold text-white transition active:scale-95"
             >
               Đã hiểu

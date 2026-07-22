@@ -1,0 +1,685 @@
+--- a/components/ChatBox.tsx
++++ b/components/ChatBox.tsx
+@@ -54,6 +54,7 @@
+ import Avatar from "@/components/Avatar";
+ import FloatingPet from "@/components/FloatingPet";
+ import { usePresenceHeartbeat, useTypingIndicator } from "@/lib/presence";
++import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
+ 
+ const MAX_IMAGE_MB = 15;
+ /** Long-press bao lâu (ms) thì mở thanh chọn cảm xúc nhanh — đủ để không kích
+@@ -1569,7 +1570,9 @@
+           </div>
+         </div>
+ 
+-        <FloatingPet species={species} stage={pet.stage} mood={pet.mood} variant={variant} accessory={accessory} bumpKey={messages.length} />
++        {SHOW_COUPLE_FEATURES && (
++          <FloatingPet species={species} stage={pet.stage} mood={pet.mood} variant={variant} accessory={accessory} bumpKey={messages.length} />
++        )}
+       </div>
+ 
+       {lightbox && (
+--- a/components/ChatHeader.tsx
++++ b/components/ChatHeader.tsx
+@@ -10,7 +10,7 @@
+ import ChatSettingsSheet from "@/components/ChatSettingsSheet";
+ import PetEvolutionCelebration from "@/components/PetEvolutionCelebration";
+ import Avatar from "@/components/Avatar";
+-import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, VideoIcon } from "@/components/icons";
++import { ChevronLeftIcon, MoreVerticalIcon, PhoneIcon, ImageIcon } from "@/components/icons";
+ import { usePartnerOnline, formatLastSeen } from "@/lib/presence";
+ import { useChatTheme } from "@/lib/chat-theme-context";
+ import { SHOW_COUPLE_FEATURES } from "@/lib/feature-flags";
+@@ -137,96 +137,83 @@
+ 
+   return (
+     <>
+-      <header className="safe-top glass-surface relative z-20 flex shrink-0 items-center gap-0.5 border-x-0 border-t-0 px-1 py-2.5">
++      {/* Header nổi TRONG SUỐT đè lên ảnh nền cover (.chat-photo-bg) thay vì
++          1 thanh glass-surface đặc chạy hết chiều ngang như trước — đúng bố
++          cục mockup: nút back tròn riêng biệt bên trái, cụm avatar+tên dạng
++          "pill" kính mờ riêng biệt bên phải, không có thanh nền chung. */}
++      <header className="safe-top relative z-20 flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
+         <Link
+           href="/"
+           aria-label="Về danh sách trò chuyện"
+-          className="flex h-10 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-transform active:scale-90 active:bg-white/10"
++          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
+         >
+-          <ChevronLeftIcon className="h-6 w-6" />
++          <ChevronLeftIcon className="h-5 w-5" />
+         </Link>
+ 
+-        {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ, giống TikTok */}
+-        <Link
+-          href={partnerId ? `/profile/${partnerId}` : "#"}
+-          className="flex min-w-0 flex-1 items-center gap-2.5 transition-transform active:scale-[0.98] active:opacity-80"
+-        >
+-          <span
+-            className={`relative shrink-0 rounded-full p-[2px] ${isPartnerOnline ? "avatar-ring-online" : "avatar-ring-offline"}`}
++        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
++          {/* Bấm vào avatar/tên đối phương -> mở trang hồ sơ của họ */}
++          <Link
++            href={partnerId ? `/profile/${partnerId}` : "#"}
++            className="flex min-w-0 items-center gap-2 rounded-full border border-white/15 bg-black/35 py-1.5 pl-1.5 pr-3.5 backdrop-blur-md transition active:scale-[0.98] active:bg-black/50"
+           >
+-            <span className="block rounded-full border-2 border-[var(--background)]">
+-              <Avatar url={partner?.avatar_url} name={nickname || petName} size={34} />
++            <span className="relative shrink-0">
++              <Avatar url={partner?.avatar_url} name={nickname || petName} size={28} />
++              {isPartnerOnline && (
++                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-black/60 bg-emerald-400" />
++              )}
+             </span>
+-            {isPartnerOnline && (
+-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] bg-emerald-400" />
+-            )}
+-          </span>
+-          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+-            {/* Streak trước đây gắn làm huy hiệu ở góc avatar (36px) -> viên
+-                pill lửa+số lớn hơn hẳn góc avatar nên đè lên che mất mặt
+-                avatar. Dời hẳn ra khỏi avatar, đặt thành 1 chip nhỏ đi kèm
+-                ngay sau tên (giữa dòng, cùng baseline) — vẫn bấm được để mở
+-                PetSheet, nhưng không còn chồng lấn/che bất kỳ phần nào của
+-                avatar nữa. Tên dùng min-w-0 + truncate để tự nhường chỗ cho
+-                chip khi tên dài, chip luôn giữ nguyên kích thước (shrink-0). */}
+-            <span className="flex min-w-0 items-center gap-1.5">
+-              <span className="truncate text-[15px] font-semibold text-[var(--foreground)]">{nickname}</span>
++            <span className="flex min-w-0 flex-col items-start text-left leading-tight">
++              <span className="truncate text-[13.5px] font-semibold text-white">{nickname}</span>
+               {SHOW_COUPLE_FEATURES && streak.current_streak > 0 && (
+-                <button
+-                  type="button"
++                <span
++                  role="button"
++                  tabIndex={0}
+                   onClick={(e) => {
+                     e.preventDefault();
+                     e.stopPropagation();
+                     setSheetOpen(true);
+                   }}
+-                  aria-label="Xem chuỗi và pet"
+-                  className="shrink-0 transition active:scale-90"
++                  className="text-[10px] text-white/70"
+                 >
+                   <FlameBadge streak={streak.current_streak} size="sm" variant="pill" />
+-                </button>
++                </span>
+               )}
+             </span>
+-            <span
+-              className={`truncate text-[11px] ${
+-                isPartnerOnline ? "font-medium text-emerald-400" : "text-[var(--muted)]"
+-              }`}
+-            >
+-              {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
+-            </span>
+-          </div>
+-        </Link>
+-
+-        {/* Gọi thoại/video: giữ nguyên chỗ này, backend nối sau. Tăng kích
+-            thước icon lên (avatar đã thu nhỏ) để hài hoà, cân đối hơn giữa
+-            avatar nhỏ và cụm nút bên phải, giống ảnh tham khảo. */}
+-        <button
+-          type="button"
+-          aria-label="Gọi thoại"
+-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
+-        >
+-          <PhoneIcon className="h-5 w-5" strokeWidth={1.8} />
+-        </button>
++          </Link>
+ 
+-        <button
+-          type="button"
+-          aria-label="Gọi video"
+-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
+-        >
+-          <VideoIcon className="h-5 w-5" strokeWidth={1.8} />
+-        </button>
++          <button
++            type="button"
++            aria-label="Gọi thoại"
++            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
++          >
++            <PhoneIcon className="h-4 w-4" strokeWidth={1.8} />
++          </button>
+ 
+-        {/* Icon "..." nằm ngang cũ tốn bề ngang hơn -> đổi thành 3 chấm nằm
+-            dọc (MoreVerticalIcon), gọn hơn để không góp phần gây chồng nút. */}
+-        <button
+-          type="button"
+-          onClick={() => setSettingsOpen(true)}
+-          aria-label="Tuỳ chỉnh đoạn chat"
+-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90 active:bg-white/10"
+-        >
+-          <MoreVerticalIcon className="h-5 w-5" />
+-        </button>
++          <button
++            type="button"
++            onClick={() => setSettingsOpen(true)}
++            aria-label="Tuỳ chỉnh đoạn chat"
++            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur-md transition active:scale-90 active:bg-black/50"
++          >
++            <MoreVerticalIcon className="h-4 w-4" />
++          </button>
++        </div>
+       </header>
+ 
++      {/* "Tag row" đúng mockup (.tag-row: #art + 2 stat) — TODO: app 1-1 hiện
++          chưa có khái niệm "chủ đề"/"lượt thích" của 1 cuộc trò chuyện; tạm
++          hiện trạng thái online như 1 tag thật + số ảnh đã gửi làm stat thật
++          (initialPhotoCount), thay bằng dữ liệu tag/chủ đề thật khi có. */}
++      <div className="relative z-20 flex shrink-0 items-center gap-2.5 px-4 pb-4">
++        <span className="rounded-full bg-black/45 px-3.5 py-1.5 text-[12px] font-semibold text-white backdrop-blur-md">
++          {isPartnerOnline ? "Đang hoạt động" : mounted ? formatLastSeen(partner?.last_seen) : "\u00A0"}
++        </span>
++        <span className="flex items-center gap-1.5 text-[12px] text-white/85">
++          <ImageIcon className="h-3.5 w-3.5" />
++          {initialPhotoCount}
++        </span>
++      </div>
++
+       {sheetOpen && (
+         <PetSheet
+           coupleId={coupleId}
+@@ -262,7 +249,7 @@
+         />
+       )}
+ 
+-      {celebrateStage && (
++      {SHOW_COUPLE_FEATURES && celebrateStage && (
+         <PetEvolutionCelebration
+           petName={petName}
+           species={species}
+--- a/components/ProfileEditor.tsx
++++ b/components/ProfileEditor.tsx
+@@ -143,26 +143,22 @@
+     // chỉ còn chữ trắng mờ trên nền hồng nhạt, trông như bị vỡ giao diện.
+     // Container cha (bên dưới) đã thêm `isolate` để đảm bảo z-0 ở đây luôn
+     // là lớp thấp nhất RIÊNG trong phạm vi hero, không ảnh hưởng ra ngoài.
+-    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#6f8fd6] via-[var(--brand)] to-[var(--brand-dark)]">
++    <div className="absolute inset-0 z-0 overflow-hidden bg-[var(--background)]">
+       {imageUrl ? (
++        // Đúng kỹ thuật "cover photo + blur + glass" trong globals.css
++        // (.cover-photo-frame): ảnh cover thật full-bleed phía trên, rồi
++        // phủ scrim tối dần xuống đúng màu --background để hoà liền mạch
++        // vào phần nội dung bên dưới — không còn dải màu xanh/hồng lệch
++        // tông so với theme "Ember Black" như trước.
+         // eslint-disable-next-line @next/next/no-img-element
+-        <img
+-          src={imageUrl}
+-          alt=""
+-          className="absolute inset-x-0 top-0 h-[62%] w-full object-cover opacity-95"
+-          style={{
+-            maskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
+-            WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 88%)",
+-          }}
+-        />
++        <img src={imageUrl} alt="" className="absolute inset-x-0 top-0 h-[62%] w-full object-cover" />
+       ) : (
+-        // Chưa có ảnh: thay vì một khối màu phẳng (nhìn như hình vẽ trẻ
+-        // con), phủ thêm vài quầng sáng mờ + noise nhẹ để có chiều sâu,
+-        // gần với cảm giác "biên tập/editorial" của ảnh mẫu hơn.
++        // Chưa có ảnh: quầng sáng ấm (cam/đỏ) đúng bảng màu brand thay vì
++        // xanh dương/hồng, giữ noise nhẹ cho có chiều sâu.
+         <div className="absolute inset-0 h-[62%] w-full overflow-hidden">
+-          <div className="absolute -left-10 -top-16 h-64 w-64 rounded-full bg-white/25 blur-3xl" />
+-          <div className="absolute -right-16 top-10 h-72 w-72 rounded-full bg-[#ffd7e8]/30 blur-3xl" />
+-          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[#4a5fb0]/30 blur-3xl" />
++          <div className="absolute -left-10 -top-16 h-64 w-64 rounded-full bg-[var(--brand)]/25 blur-3xl" />
++          <div className="absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent-violet)]/25 blur-3xl" />
++          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[var(--brand-dark)]/25 blur-3xl" />
+           <div
+             className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
+             style={{
+@@ -172,7 +168,15 @@
+           />
+         </div>
+       )}
+-      <div className="absolute inset-0 bg-black/10" />
++      {/* Scrim: nhạt ở đỉnh ảnh -> đen đặc dần về phía nội dung, đúng nhịp
++          mockup (.cover::after: rgba(0,0,0,.1) -> transparent 32% -> nền đen). */}
++      <div
++        className="absolute inset-0"
++        style={{
++          background:
++            "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 30%, var(--background) 92%)",
++        }}
++      />
+     </div>
+   );
+ }
+@@ -344,6 +348,19 @@
+           {saved && <p className="mt-1 text-xs font-medium text-emerald-200">Đã lưu thay đổi ✓</p>}
+         </div>
+ 
++        {/* "Quote" + bio đúng mockup (.quote/.bio) — TODO: ProfileRow chưa có
++            cột quote/bio thật, đây là chỗ đặt sẵn UI; khi có cột dữ liệu
++            (vd migration thêm profiles.quote, profiles.bio) chỉ cần đổ giá
++            trị thật vào 2 dòng này, không cần sửa lại layout. */}
++        <p className="mt-2 max-w-xs text-center text-[15px] font-semibold text-white/90">
++          {/* placeholder — chưa có dữ liệu quote thật */}
++          &ldquo;Chưa có câu giới thiệu&rdquo;
++        </p>
++        <p className="mt-1.5 max-w-xs text-center text-[12.5px] leading-relaxed text-white/60">
++          {/* placeholder — chưa có dữ liệu bio thật */}
++          Chưa có tiểu sử. Thêm mô tả ngắn về bạn ở đây.
++        </p>
++
+         <div className="mt-3">
+           <GlassTagRow tags={tags} />
+         </div>
+@@ -352,7 +369,8 @@
+           <button
+             type="button"
+             onClick={() => setEditing(true)}
+-            className="mt-4 w-full max-w-xs rounded-full border border-white/25 bg-white/12 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-xl transition active:scale-[0.98] active:bg-white/20"
++            className="mt-4 w-full max-w-xs rounded-full py-2.5 text-sm font-bold text-white shadow-[0_8px_24px_-6px_rgba(255,138,61,0.35)] transition active:scale-[0.98]"
++            style={{ background: "linear-gradient(90deg, #8a3fbf, #ff8a3d)" }}
+           >
+             Chỉnh sửa trang cá nhân
+           </button>
+@@ -413,6 +431,23 @@
+             <GlassStatCards stats={stats} />
+           </div>
+         )}
++
++        {/* Lưới "Chats" đúng mockup — TODO: chưa có dữ liệu nhóm/chủ đề thật,
++            khung đặt sẵn (viền nét đứt, không bịa số liệu), đổ dữ liệu thật
++            khi có tính năng nhóm/chủ đề theo hồ sơ. */}
++        <div className="mt-7 w-full max-w-sm">
++          <p className="mb-2.5 text-left text-xs font-semibold uppercase tracking-wide text-white/60">Chats</p>
++          <div className="grid grid-cols-2 gap-2.5">
++            {[0, 1].map((i) => (
++              <div
++                key={i}
++                className="flex h-[100px] items-end rounded-2xl border border-dashed border-white/20 bg-white/5 p-2.5"
++              >
++                <span className="text-[11px] text-white/40">Chưa có dữ liệu</span>
++              </div>
++            ))}
++          </div>
++        </div>
+       </div>
+     </div>
+   );
+--- a/components/ConversationListClient.tsx
++++ b/components/ConversationListClient.tsx
+@@ -3,9 +3,24 @@
+ import { useEffect, useMemo, useState } from "react";
+ import ConversationRow from "@/components/ConversationRow";
+ import InstantSessionFlow from "@/components/InstantSessionFlow";
+-import { SearchIcon, PlusIcon, XIcon, ChatBubbleIcon } from "@/components/icons";
++import Avatar from "@/components/Avatar";
++import { SearchIcon, ChatBubbleIcon } from "@/components/icons";
+ import type { ConversationSummary, ProfileRow } from "@/lib/types";
+ 
++// Nhãn tab đúng theo mockup (01-chat-list.html): All / Personal / Groups /
++// Unanswered — kiểu gạch chân bên dưới tab đang chọn, KHÔNG còn dạng pill
++// filled như trước. "groups" hiện chưa có nguồn dữ liệu (app chưa có khái
++// niệm nhóm) nên luôn rỗng kèm empty-state riêng — chỉ cần đổ thêm dữ liệu
++// group vào `conversations` (type: "group") sau này là tab này chạy được
++// ngay, không cần sửa lại UI.
++const TABS = [
++  { key: "all", label: "All" },
++  { key: "personal", label: "Personal" },
++  { key: "groups", label: "Groups" },
++  { key: "unanswered", label: "Unanswered" },
++] as const;
++type TabKey = (typeof TABS)[number]["key"];
++
+ export default function ConversationListClient({
+   conversations,
+   myUserId,
+@@ -17,10 +32,9 @@
+   /** Nếu couple của mình chưa có đủ 2 người, truyền mã mời để hiện banner chờ. */
+   waitingInviteCode: string | null;
+ }) {
+-  const [searchOpen, setSearchOpen] = useState(false);
+   const [query, setQuery] = useState("");
+-  const [tab, setTab] = useState<"all" | "unread" | "pinned">("all");
+-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
++  const [tab, setTab] = useState<TabKey>("all");
++  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
+   const [instantOpen, setInstantOpen] = useState(false);
+   // Hiện tại app chỉ hỗ trợ đúng 1 cuộc trò chuyện (couple) — lấy id từ phần
+   // tử đầu tiên. Khi mở rộng nhiều cuộc trò chuyện sẽ cần cho người dùng
+@@ -41,87 +55,106 @@
+       : conversations.filter(
+           (c) => c.nickname.toLowerCase().includes(q) || c.previewText.toLowerCase().includes(q)
+         );
+-    if (tab === "unread") base = base.filter((c) => c.unreadCount > 0);
+-    if (tab === "pinned") base = base.filter((c) => c.isPinned);
+-    // Hội thoại đã ghim luôn nổi lên đầu danh sách (chưa có ý nghĩa nhiều khi
+-    // chỉ có 1 hội thoại duy nhất, nhưng sẵn sàng cho lúc mở rộng bạn bè/
+-    // người thân — xem ghi chú trong ConversationSummary).
++    if (tab === "personal") base = base.filter((c) => c.type === "couple" || c.type === "friend" || c.type === "family");
++    // TODO: chưa có type "group" trong ConversationSummary/DB — khi có, lọc
++    // ở đây (c.type === "group"). Hiện luôn rỗng, hiển thị empty-state riêng.
++    if (tab === "groups") base = [];
++    if (tab === "unanswered") base = base.filter((c) => c.unreadCount > 0);
++    // Hội thoại đã ghim luôn nổi lên đầu danh sách.
+     return [...base].sort((a, b) => Number(b.isPinned) - Number(a.isPinned));
+   }, [conversations, query, tab]);
+ 
+   return (
+     <div className="flex flex-1 flex-col overflow-hidden text-[var(--foreground)]">
+-      <header className="safe-top flex shrink-0 items-center justify-between gap-3 px-5 pb-3">
+-        {searchOpen ? (
+-          <div className="glass-pill flex flex-1 items-center gap-2 rounded-full px-4 py-2.5">
+-            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+-            <input
+-              autoFocus
+-              value={query}
+-              onChange={(e) => setQuery(e.target.value)}
+-              placeholder="Tìm hội thoại..."
+-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+-            />
++      <header className="safe-top flex shrink-0 items-center justify-between gap-3 px-5 pb-4">
++        <h1 className="text-[28px] font-bold tracking-tight text-[var(--foreground)]">Chats</h1>
++        <button
++          type="button"
++          onClick={() => setAdvancedSearchOpen(true)}
++          aria-label="Tìm kiếm nâng cao"
++          className="glass-pill flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
++        >
++          <SearchIcon className="h-[17px] w-[17px]" />
++        </button>
++      </header>
++
++      {/* Ô tìm kiếm luôn hiển thị (không còn ẩn/hiện qua icon) — đúng bố cục
++          mockup, nơi search box nằm cố định ngay dưới tiêu đề "Chats". */}
++      <div className="shrink-0 px-5 pb-4">
++        <div className="glass-pill flex items-center gap-2.5 rounded-2xl px-4 py-3">
++          <SearchIcon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
++          <input
++            value={query}
++            onChange={(e) => setQuery(e.target.value)}
++            placeholder="Tìm kiếm"
++            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
++          />
++        </div>
++      </div>
++
++      {/* Tabs dạng gạch chân, không phải pill — đúng .tabs trong mockup. */}
++      <div className="thin-scroll flex shrink-0 items-center gap-6 overflow-x-auto px-5 pb-4">
++        {TABS.map(({ key, label }) => {
++          const active = tab === key;
++          return (
+             <button
++              key={key}
+               type="button"
+-              onClick={() => {
+-                setSearchOpen(false);
+-                setQuery("");
+-              }}
+-              aria-label="Đóng tìm kiếm"
+-              className="shrink-0 rounded-full p-1 text-[var(--muted)] transition active:scale-90"
++              onClick={() => setTab(key)}
++              className={`shrink-0 border-b-2 pb-1.5 text-[15px] transition ${
++                active
++                  ? "border-[var(--foreground)] font-bold text-[var(--foreground)]"
++                  : "border-transparent font-medium text-[var(--muted)]"
++              }`}
+             >
+-              <XIcon className="h-4 w-4" />
++              {label}
+             </button>
+-          </div>
+-        ) : (
+-          <>
+-            <h1 className="text-[28px] font-bold tracking-tight text-[var(--foreground)]">Chats</h1>
+-            <div className="flex items-center gap-2">
+-              {conversations.length > 0 && (
+-                <button
+-                  type="button"
+-                  onClick={() => setSearchOpen(true)}
+-                  aria-label="Tìm hội thoại"
+-                  className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
+-                >
+-                  <SearchIcon className="h-[17px] w-[17px]" />
+-                </button>
+-              )}
++          );
++        })}
++      </div>
+ 
+-              <button
+-                type="button"
+-                onClick={() => setComingSoonOpen(true)}
+-                aria-label="Tạo hội thoại mới"
+-                className="glass-pill flex h-10 w-10 items-center justify-center rounded-full text-[var(--foreground)] transition active:scale-90"
+-              >
+-                <PlusIcon className="h-[17px] w-[17px]" />
+-              </button>
+-            </div>
+-          </>
+-        )}
+-      </header>
++      {/* Hàng "stories" (avatar viền gradient + badge số) giống mockup —
++          TODO: chưa có tính năng story/khoảnh khắc thật, đang tạm dùng lại
++          avatar + unreadCount của chính cuộc trò chuyện làm placeholder có
++          dữ liệu thật (không phải số giả), thay bằng nguồn story riêng khi
++          tính năng đó được xây dựng. */}
++      {conversations.length > 0 && (
++        <div className="thin-scroll flex shrink-0 items-center gap-4 overflow-x-auto px-5 pb-5">
++          {conversations.map((c) => (
++            <button
++              key={`story-${c.id}`}
++              type="button"
++              onClick={() => (window.location.href = "/chat")}
++              aria-label={`Xem story của ${c.nickname}`}
++              className="relative h-[58px] w-[58px] shrink-0 transition active:scale-95"
++            >
++              <span className="avatar-ring-online block h-full w-full rounded-full p-[2.5px]">
++                <span className="block h-full w-full rounded-full border-[2.5px] border-[var(--background)]">
++                  <Avatar url={c.partnerProfile?.avatar_url} name={c.nickname} size={53} />
++                </span>
++              </span>
++              {c.unreadCount > 0 && (
++                <span className="unread-dot absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-[var(--background)] px-1 text-[11px] font-bold text-white">
++                  {c.unreadCount > 99 ? "99+" : c.unreadCount}
++                </span>
++              )}
++            </button>
++          ))}
++        </div>
++      )}
+ 
+-      {!searchOpen && conversations.length > 0 && (
+-        <div className="thin-scroll flex shrink-0 items-center gap-2 overflow-x-auto px-5 pb-3">
+-          {(["all", "unread", "pinned"] as const).map((key) => {
+-            const active = tab === key;
+-            const label = key === "all" ? "Tất cả" : key === "unread" ? "Chưa đọc" : "Đã ghim";
+-            return (
+-              <button
+-                key={key}
+-                type="button"
+-                onClick={() => setTab(key)}
+-                className={`segmented-tab shrink-0 rounded-full px-4 py-1.5 text-[13px] ${active ? "segmented-tab-active" : ""}`}
+-              >
+-                {label}
+-              </button>
+-            );
+-          })}
++      {/* Section label + sub — đúng nhịp "People / Friends' recommendations"
++          trong mockup. TODO: app hiện chưa có khái niệm gợi ý bạn bè, dùng
++          nhãn trung tính phù hợp với app chat 1-1 hiện tại; đổi lại khi có
++          tính năng gợi ý thật. */}
++      {conversations.length > 0 && (
++        <div className="shrink-0 px-5 pb-1">
++          <h2 className="text-[21px] font-bold text-[var(--foreground)]">Trò chuyện</h2>
++          <p className="pb-1 text-[13px] text-[var(--muted)]">Các cuộc trò chuyện gần đây</p>
+         </div>
+       )}
+ 
+-      <div className="flex-1 overflow-y-auto px-3 pb-4">
++      <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
+         {waitingInviteCode ? (
+           <div className="glass-surface mx-1 mt-4 rounded-3xl p-5 text-center">
+             <p className="text-sm text-[var(--muted)]">
+@@ -133,7 +166,11 @@
+           <div className="mx-4 mt-10 flex flex-col items-center text-center">
+             <ChatBubbleIcon className="h-9 w-9 text-[var(--muted)]" />
+             <p className="mt-2 text-sm text-[var(--muted)]">
+-              {query ? "Không tìm thấy hội thoại nào phù hợp." : "Chưa có hội thoại nào."}
++              {tab === "groups"
++                ? "Chưa có nhóm nào — tính năng nhóm sẽ sớm ra mắt."
++                : query
++                  ? "Không tìm thấy hội thoại nào phù hợp."
++                  : "Chưa có hội thoại nào."}
+             </p>
+           </div>
+         ) : (
+@@ -148,21 +185,22 @@
+           icon camera) — ở đây chỉ lắng nghe sự kiện "sp:open-camera" mà
+           MobileTabBar phát ra khi bấm, để mở InstantSessionFlow bên dưới. */}
+ 
+-      {comingSoonOpen && (
++      {advancedSearchOpen && (
+         <div className="fixed inset-0 z-50 flex items-end justify-center">
+-          <div className="absolute inset-0 bg-black/50" onClick={() => setComingSoonOpen(false)} aria-hidden />
++          <div className="absolute inset-0 bg-black/50" onClick={() => setAdvancedSearchOpen(false)} aria-hidden />
+           <div className="glass-surface safe-bottom animate-sheet-up relative w-full max-w-md rounded-t-3xl p-6 text-center shadow-xl">
+             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-light)] text-[var(--brand)]">
+-              <ChatBubbleIcon className="h-6 w-6" />
++              <SearchIcon className="h-6 w-6" />
+             </div>
+-            <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Sắp ra mắt</h2>
++            <h2 className="mt-3 text-base font-bold text-[var(--foreground)]">Tìm kiếm nâng cao</h2>
++            {/* TODO: chưa có bộ lọc nâng cao thật (theo ngày, theo loại tin
++                nhắn...) — đây là chỗ đặt sẵn UI, nối logic lọc thật sau. */}
+             <p className="mt-1 text-sm text-[var(--muted)]">
+-              Trò chuyện với bạn bè và người thân đang được phát triển — hiện app chỉ hỗ trợ 1 cuộc trò
+-              chuyện với người ấy của bạn.
++              Bộ lọc tìm kiếm nâng cao đang được phát triển — hiện dùng ô tìm kiếm phía trên để lọc theo tên.
+             </p>
+             <button
+               type="button"
+-              onClick={() => setComingSoonOpen(false)}
++              onClick={() => setAdvancedSearchOpen(false)}
+               className="mt-4 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-semibold text-white transition active:scale-95"
+             >
+               Đã hiểu
+--- a/lib/chat-theme-context.tsx
++++ b/lib/chat-theme-context.tsx
+@@ -50,12 +50,17 @@
+   initialThemeColor,
+   initialAccessory,
+   className,
++  style,
+   children,
+ }: {
+   coupleId: string;
+   initialThemeColor: string;
+   initialAccessory?: PetAccessoryValue;
+   className?: string;
++  /** Style bổ sung từ nơi gọi (vd nền ảnh cover riêng của phòng chat) — được
++   * gộp CÙNG với biến --brand/--brand-dark suy ra từ themeColor, không ghi
++   * đè lên nhau. */
++  style?: React.CSSProperties;
+   children: ReactNode;
+ }) {
+   const [themeColor, setThemeColor] = useState(initialThemeColor || DEFAULT_THEME_COLOR);
+@@ -84,7 +89,7 @@
+   }, [coupleId]);
+ 
+   return (
+-    <div className={className} style={themeCssVars(themeColor)}>
++    <div className={className} style={{ ...style, ...themeCssVars(themeColor) }}>
+       <ChatThemeContext.Provider value={{ themeColor, setThemeColor, accessory, setAccessory }}>
+         {children}
+       </ChatThemeContext.Provider>
+--- a/app/chat/page.tsx
++++ b/app/chat/page.tsx
+@@ -1,3 +1,4 @@
++import type { CSSProperties } from "react";
+ import { redirect } from "next/navigation";
+ import { createClient, getSessionUser } from "@/lib/supabase/server";
+ import { checkStreakBreak } from "@/lib/actions";
+@@ -73,7 +74,15 @@
+         coupleId={couple.id}
+         initialThemeColor={couple.theme_color ?? DEFAULT_THEME_COLOR}
+         initialAccessory={accessory}
+-        className="app-ambient-bg flex flex-1 flex-col overflow-hidden"
++        className="chat-photo-bg flex flex-1 flex-col overflow-hidden"
++        style={
++          {
++            // Ảnh cover đúng mockup: banner nếu có, fallback avatar đối
++            // phương. Chưa có ảnh nào -> "none", nền rơi về --background đen
++            // phẳng (xem .chat-photo-bg trong globals.css).
++            "--chat-photo-url": partnerProfile?.avatar_url ? `url(${partnerProfile.avatar_url})` : "none",
++          } as CSSProperties
++        }
+       >
+         <ChatHeader
+           coupleId={couple.id}
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -46,6 +46,19 @@
+     linear-gradient(180deg, #0f0a08 0%, #0a0807 55%, #060504 100%);
+ }
+ 
++/* Nền phòng chat kiểu "ảnh cover full-bleed" đúng mockup 02-chat-room.html:
++   ảnh đại diện/bìa của đối phương (--chat-photo-url, đặt inline ở nơi gọi)
++   phủ kín màn hình, tối dần theo 3 mốc gradient rồi hoà hẳn vào nền đen
++   --background ở khoảng 72% chiều cao — giống hệt công thức
++   `linear-gradient(...), url(...)` trên .phone trong mockup gốc.
++   Không có ảnh (chưa có avatar) thì tự rơi về nền đen phẳng --background. */
++.chat-photo-bg {
++  background:
++    linear-gradient(180deg, rgba(30, 6, 3, 0.35) 0%, rgba(12, 3, 2, 0.88) 45%, var(--background) 72%),
++    var(--chat-photo-url, none) center/cover no-repeat,
++    var(--background);
++}
++
+ /* Card/thanh kính mờ dùng chung: header, ô tìm kiếm, hàng hội thoại, tab bar,
+    sheet... Nền bán trong suốt + blur + viền sáng mờ 1px kiểu iOS glass. */
+ .glass-surface {
+--- a/app/profile/[userId]/page.tsx
++++ b/app/profile/[userId]/page.tsx
+@@ -150,6 +150,15 @@
+                   {targetProfile.display_name || "Người ấy"}
+                 </p>
+ 
++                {/* Quote + bio đúng mockup — TODO: chưa có cột quote/bio thật
++                    trong ProfileRow, đặt sẵn UI, đổ dữ liệu thật khi có. */}
++                <p className="mt-2 max-w-xs text-center text-[15px] font-semibold text-white/90">
++                  &ldquo;Chưa có câu giới thiệu&rdquo;
++                </p>
++                <p className="mt-1.5 max-w-xs text-center text-[12.5px] leading-relaxed text-white/60">
++                  Chưa có tiểu sử.
++                </p>
++
+                 <div className="mt-3">
+                   <GlassTagRow tags={tags} />
+                 </div>
+@@ -173,6 +182,28 @@
+                     <GlassStatCards stats={stats} />
+                   </div>
+                 )}
++
++                {/* Lưới "Chats" đúng mockup (.chats-grid: các ô chủ đề/nhóm
++                    ảnh nhỏ) — TODO: app hiện chưa có khái niệm nhiều nhóm
++                    chat/chủ đề theo từng hồ sơ, đây là chỗ đặt sẵn UI khung
++                    (viền nét đứt, không bịa ảnh/số liệu giả), đổ dữ liệu
++                    thật (ảnh đại diện nhóm + số thành viên) khi có tính năng
++                    nhóm/chủ đề. */}
++                <div className="mt-7 w-full max-w-sm">
++                  <p className="mb-2.5 text-left text-xs font-semibold uppercase tracking-wide text-white/60">
++                    Chats
++                  </p>
++                  <div className="grid grid-cols-2 gap-2.5">
++                    {[0, 1].map((i) => (
++                      <div
++                        key={i}
++                        className="flex h-[100px] items-end rounded-2xl border border-dashed border-white/20 bg-white/5 p-2.5"
++                      >
++                        <span className="text-[11px] text-white/40">Chưa có dữ liệu</span>
++                      </div>
++                    ))}
++                  </div>
++                </div>
+               </div>
+             </div>
+           )}
